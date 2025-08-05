@@ -9,7 +9,7 @@ import org.example.succinct.common.SuccinctSet;
 import java.nio.charset.Charset;
 import java.util.*;
 
-public class ByteSuccinctSet implements SuccinctSet {
+public class ByteSuccinctSet implements SuccinctSet, Accountable {
     protected final Charset charset;
     protected final byte[] labels;
     protected final RankSelectBitSet labelBitmap;

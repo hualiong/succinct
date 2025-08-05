@@ -5,6 +5,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.example.succinct.common.Range;
 import org.example.succinct.common.RankSelectBitSet3;
 import org.example.succinct.common.SuccinctSet;
+import org.example.succinct.utils.StringEncoder;
 
 import it.unimi.dsi.fastutil.chars.CharArrayList;
 
@@ -14,7 +15,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 
-public class CharSuccinctSet2 implements SuccinctSet {
+public class CharSuccinctSet2 implements SuccinctSet, Accountable {
+    protected final char[] buffer = new char[128];
     protected final char[] labels;
     protected final RankSelectBitSet3 labelBitmap;
     protected final RankSelectBitSet3 isLeaf;
@@ -85,7 +87,8 @@ public class CharSuccinctSet2 implements SuccinctSet {
 
     private int getNodeIdByKey(String key) {
         int nodeId = 0, bitmapIndex = 0;
-        for (char c : key.toCharArray()) {
+        int length = StringEncoder.getChars(key, buffer);
+        for (int i = 0; i < length; i++) {
             int low = bitmapIndex, mid = -1, high = labelBitmap.select1(nodeId + 1) - 1;
             if (high >= labelBitmap.size || labelBitmap.get(high)) {
                 return -1;
@@ -93,9 +96,9 @@ public class CharSuccinctSet2 implements SuccinctSet {
             while (low <= high) {
                 mid = low + high >>> 1;
                 char label = labels[mid - nodeId];
-                if (label == c) {
+                if (label == buffer[i]) {
                     break;
-                } else if (label < c) {
+                } else if (label < buffer[i]) {
                     low = mid + 1;
                 } else {
                     high = mid - 1;

@@ -8,7 +8,7 @@ import org.example.succinct.common.SuccinctSet;
 
 import java.util.*;
 
-public class CharSuccinctSet implements SuccinctSet {
+public class CharSuccinctSet implements SuccinctSet, Accountable {
     protected final char[] labels;
     protected final RankSelectBitSet labelBitmap;
     protected final RankSelectBitSet isLeaf;

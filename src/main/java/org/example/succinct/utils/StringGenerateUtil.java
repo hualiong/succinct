@@ -11,7 +11,7 @@ import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-public class StringCodecUtil {
+public class StringGenerateUtil {
     public static byte[] compress(String str) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try (GZIPOutputStream gzip = new GZIPOutputStream(bos)) {
