@@ -43,15 +43,15 @@ public class SuccinctSetTests {
     public void queryTimeTest() {
         int count = 2000000;
         String[] randoms = StringGenerateUtil.randomArray(count, 5, 0.7f);
-        String[] copyOf = Arrays.copyOf(randoms, count >>> 1);
+        String[] copyOf = Arrays.copyOf(randoms, count >> 1);
         Set<String> set = Set.of(copyOf);
         SuccinctSet bss3 = ByteSuccinctSet3.of(copyOf);
         SuccinctSet bss2 = ByteSuccinctSet2.of(copyOf);
-        SuccinctSet css = CharSuccinctSet.of(copyOf);
+        SuccinctSet css3 = CharSuccinctSet3.of(copyOf);
         SuccinctSet css2 = CharSuccinctSet2.of(copyOf);
         SimpleFSA fsa = new SimpleFSA(copyOf);
-        
         Timer t = new Timer();
+        System.out.printf("Data: %s\n", extractSizeOf(randoms));
         t.multi(set::contains, randoms);
         System.out.printf("SetN: %dms | %s\n", t.sum(), extractSizeOf(set));
         t.reset();
@@ -61,8 +61,8 @@ public class SuccinctSetTests {
         t.multi(bss2::contains, randoms);
         System.out.printf("ByteSuccinctSet2: %dms | %s\n", t.sum(), extractSizeOf(bss2));
         t.reset();
-        t.multi(css::contains, randoms);
-        System.out.printf("CharSuccinctSet: %dms | %s\n", t.sum(), extractSizeOf(css));
+        t.multi(css3::contains, randoms);
+        System.out.printf("CharSuccinctSet3: %dms | %s\n", t.sum(), extractSizeOf(css3));
         t.reset();
         t.multi(css2::contains, randoms);
         System.out.printf("CharSuccinctSet2: %dms | %s\n", t.sum(), extractSizeOf(css2));
@@ -87,7 +87,7 @@ public class SuccinctSetTests {
         return RamUsageEstimator.humanReadableUnits(bytes);
     }
 
-    private static String extractSizeOf(Object o) {
+    public static String extractSizeOf(Object o) {
         return RamUsageEstimator.humanReadableUnits(GraphLayout.parseInstance(o).totalSize());
     }
 

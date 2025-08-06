@@ -3,6 +3,7 @@ package org.example.succinct;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.util.BytesRef;
@@ -13,9 +14,25 @@ import org.apache.lucene.util.fst.NoOutputs;
 import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
+import org.example.succinct.utils.StringGenerateUtil;
 import org.junit.Test;
 
+import static org.example.succinct.SuccinctSetTests.extractSizeOf;
+
 public class FSTTests {
+    @Test
+    public void memoryTest() throws IOException {
+        String[] array = StringGenerateUtil.readArray("C:\\Users\\huazhaoming\\Desktop\\100w_en_kv.txt");
+        Map<BytesRef, Long> map = new HashMap<>();
+        for (String line : array) {
+            String[] parts = line.split(" ");
+            if (parts.length == 2) {
+                map.put(new BytesRef(parts[0]), Long.parseLong(parts[1]));
+            }
+        }
+        System.out.println(extractSizeOf(createFst(map)));
+    }
+
     @Test
     public void testFST() throws IOException {
         // 1. 准备有序输入数据（必须按字典序排序！）

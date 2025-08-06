@@ -2,12 +2,17 @@ package org.example.succinct.utils;
 
 import org.apache.commons.lang3.RandomStringUtils;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -124,16 +129,29 @@ public class StringGenerateUtil {
         return randoms;
     }
 
-    public static void main(String[] args) {
-        // 生成10个字符串，中文比例在20%-40%之间
-        for (int i = 1; i <= 10; i++) {
-            String balanced = balancedString(15, 0.5f);
-            // 计算实际中文比例
-            int chineseCount = (int) balanced.chars().filter(c -> c > 127).count();
-            float actualRatio = (float) chineseCount / balanced.length();
-            
-            System.out.printf("%2d: %s (中文: %.1f%%)%n", i, balanced, actualRatio * 100);
+    public static String[] readArray(String filePath) {
+        try (Stream<String> stream = Files.lines(Paths.get(filePath))) {
+            return stream.toArray(String[]::new);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+        return new String[0];
+    }
+
+    public static void writeToFile(String[] lines, String filePath) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+            for (String line : lines) {
+                writer.write(line);
+                writer.newLine(); // 写入换行符
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) {
+        String[] randoms = StringGenerateUtil.randomArray(1000000, 8, 0.0f);
+        writeToFile(randoms, "C:\\Users\\huazhaoming\\Desktop\\100w_en.txt");
     }
     
     // 常用汉字集合（2500个最常用汉字）

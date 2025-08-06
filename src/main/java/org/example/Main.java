@@ -1,10 +1,8 @@
 package org.example;
 
 import org.apache.lucene.util.RamUsageEstimator;
-import org.example.succinct.ByteSuccinctSet;
 import org.example.succinct.ByteSuccinctSet2;
 import org.example.succinct.ByteSuccinctSet3;
-import org.example.succinct.CharSuccinctSet;
 import org.example.succinct.CharSuccinctSet2;
 import org.example.succinct.CharSuccinctSet3;
 import org.example.succinct.common.SimpleFSA;
@@ -29,27 +27,30 @@ public class Main {
         StringEncoder encoder = new StringEncoder(Charset.forName(charset));
         String[] str = new String[10000000];
         Arrays.fill(str, "我是中国人");
-        Timer t1 = new Timer();
-        Timer t11 = new Timer();
-        Timer t2 = new Timer();
-        Timer t3 = new Timer();
-        Timer t4 = new Timer();
-        t1.multi(String::toCharArray, str);
-        t11.multi(s -> StringEncoder.getChars(s, c), str);
-        t2.multi(String::getBytes, str);
-        t3.multi(encoder::encodeToBuffer, str);
-        t4.multi(s -> s.getBytes(Charset.forName(charset)), str);
-        System.out.println("CHAR: " + t1.sum() + "ms");
-        System.out.println("CHAR(getChars): " + t11.sum() + "ms");
-        System.out.println("UTF-8: " + t2.sum() + "ms");
-        System.out.println(charset + "(encoder): " + t3.sum() + "ms");
-        System.out.println(charset + ": " + t4.sum() + "ms");
+        Timer t = new Timer();
+        t.multi(String::toCharArray, str);
+        System.out.println("CHAR: " + t.sum() + "ms");
+        t.reset();
+        t.multi(s -> StringEncoder.getChars(s, c), str);
+        System.out.println("CHAR(getChars): " + t.sum() + "ms");
+        t.reset();
+        t.multi(String::getBytes, str);
+        System.out.println("UTF-8: " + t.sum() + "ms");
+        t.reset();
+        t.multi(encoder::encodeToBytes, str);
+        System.out.println(charset + "(encodeToBytes): " + t.sum() + "ms");
+        t.reset();
+        t.multi(encoder::encodeToBuffer, str);
+        System.out.println(charset + "(encodeToBuffer): " + t.sum() + "ms");
+        t.reset();
+        t.multi(s -> s.getBytes(Charset.forName(charset)), str);
+        System.out.println(charset + ": " + t.sum() + "ms");
     }
 
     public static void queryTimeTest() {
         int count = 2000000;
-        String[] randoms = StringGenerateUtil.randomArray(count, 8, 0.0f);
-        Set<String> set = Set.of(randoms);
+        String[] randoms = StringGenerateUtil.readArray("C:\\Users\\huazhaoming\\Desktop\\key.txt");
+        // Set<String> set = Set.of(randoms);
         SuccinctSet bss3 = ByteSuccinctSet3.of(randoms);
         SuccinctSet bss2 = ByteSuccinctSet2.of(randoms);
         SuccinctSet css3 = CharSuccinctSet3.of(randoms);
@@ -57,9 +58,9 @@ public class Main {
         SimpleFSA fsa = new SimpleFSA(randoms);
         Timer t = new Timer();
         System.out.printf("Data: %s\n", extractSizeOf(randoms));
-        t.multi(set::contains, randoms);
-        System.out.printf("SetN: %dms | %s\n", t.sum(), extractSizeOf(set));
-        t.reset();
+        // t.multi(set::contains, randoms);
+        // System.out.printf("SetN: %dms | %s\n", t.sum(), extractSizeOf(set));
+        // t.reset();
         t.multi(bss3::contains, randoms);
         System.out.printf("ByteSuccinctSet3: %dms | %s\n", t.sum(), extractSizeOf(bss3));
         t.reset();
