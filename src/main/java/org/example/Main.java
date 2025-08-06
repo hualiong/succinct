@@ -6,6 +6,7 @@ import org.example.succinct.ByteSuccinctSet2;
 import org.example.succinct.ByteSuccinctSet3;
 import org.example.succinct.CharSuccinctSet;
 import org.example.succinct.CharSuccinctSet2;
+import org.example.succinct.CharSuccinctSet3;
 import org.example.succinct.common.SimpleFSA;
 import org.example.succinct.common.SuccinctSet;
 import org.example.succinct.test.Timer;
@@ -19,19 +20,11 @@ import java.util.Set;
 
 public class Main {
     public static void main(String[] args) {
-        char[] buffer = new char[128];
-        int length = StringEncoder.getChars("中国人", buffer);
-        for (int i = 0; i < length; i++) {
-            System.out.println(buffer[i]);
-        }
-        length = StringEncoder.getChars("你好", buffer);
-        for (int i = 0; i < length; i++) {
-            System.out.println(buffer[i]);
-        }
+        queryTimeTest();
     }
     
     public static void encodeTimeTest() {
-        String charset = "UTF-8";
+        String charset = "GB18030";
         char[] c = new char[1024];
         StringEncoder encoder = new StringEncoder(Charset.forName(charset));
         String[] str = new String[10000000];
@@ -56,15 +49,14 @@ public class Main {
     public static void queryTimeTest() {
         int count = 2000000;
         String[] randoms = StringGenerateUtil.randomArray(count, 8, 0.0f);
-        String[] copyOf = randoms;
-        Set<String> set = Set.of(copyOf);
-        SuccinctSet bss3 = ByteSuccinctSet3.of(copyOf);
-        SuccinctSet bss2 = ByteSuccinctSet2.of(copyOf);
-        SuccinctSet css = CharSuccinctSet.of(copyOf);
-        SuccinctSet css2 = CharSuccinctSet2.of(copyOf);
-        SimpleFSA fsa = new SimpleFSA(copyOf);
+        Set<String> set = Set.of(randoms);
+        SuccinctSet bss3 = ByteSuccinctSet3.of(randoms);
+        SuccinctSet bss2 = ByteSuccinctSet2.of(randoms);
+        SuccinctSet css3 = CharSuccinctSet3.of(randoms);
+        SuccinctSet css2 = CharSuccinctSet2.of(randoms);
+        SimpleFSA fsa = new SimpleFSA(randoms);
         Timer t = new Timer();
-        System.out.printf("Data: %s\n", extractSizeOf(copyOf));
+        System.out.printf("Data: %s\n", extractSizeOf(randoms));
         t.multi(set::contains, randoms);
         System.out.printf("SetN: %dms | %s\n", t.sum(), extractSizeOf(set));
         t.reset();
@@ -74,8 +66,8 @@ public class Main {
         t.multi(bss2::contains, randoms);
         System.out.printf("ByteSuccinctSet2: %dms | %s\n", t.sum(), extractSizeOf(bss2));
         t.reset();
-        t.multi(css::contains, randoms);
-        System.out.printf("CharSuccinctSet: %dms | %s\n", t.sum(), extractSizeOf(css));
+        t.multi(css3::contains, randoms);
+        System.out.printf("CharSuccinctSet3: %dms | %s\n", t.sum(), extractSizeOf(css3));
         t.reset();
         t.multi(css2::contains, randoms);
         System.out.printf("CharSuccinctSet2: %dms | %s\n", t.sum(), extractSizeOf(css2));
