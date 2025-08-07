@@ -1,7 +1,6 @@
 package org.example.succinct.common;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;

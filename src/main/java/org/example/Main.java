@@ -19,7 +19,13 @@ import java.util.Set;
 
 public class Main {
     public static void main(String[] args) {
-        containsTimeTest(2);
+        // SuccinctSet bss3 = ByteSuccinctSet3.of("ૢ䊵࡬ﻰॽ", "׶¸Нꖷм旋", "ੱºڣଟ਄莋", "顼୲¤঴ݖ¦鲧", "ӏ¸ݩµॿ઱", "হ·ꁫ㴯র¹਷µ", "⨵䐃ੜ±࣐µ䷣ύ", "఺»삄ఌ¹ଟ¥瓯", "ୁ 晔②݌¹ܾ»", "ऻ¢㫌쵐ઋ¾꾶幞", "ਪ·❱ি·패⺖ژ", "ଖ뢚膂଑ת¿", "ㄱ৐·晩샥댈㡏㡡", "ѱ¹颈॔ ѣᘏ", "ઉ҈¼Ҿ¦㋏띸");
+        // System.out.println(bss3.contains("ૢ䊵࡬ﻰॽ"));
+        // Charset charset = Charset.forName("GB18030");
+        // StringEncoder encoder = new StringEncoder(charset);
+        // System.out.println(Arrays.toString("".getBytes(charset)));
+        // System.out.println(Arrays.toString(encoder.encodeToBytes('')));
+        containsTimeTest(40);
     }
     
     public static void encodeTimeTest() {
@@ -49,8 +55,10 @@ public class Main {
     }
 
     public static void containsTimeTest(int flag) {
-        String[] randoms = StringGenerateUtil.readArray("C:\\Users\\huazhaoming\\Desktop\\data\\100w_en.txt");
+        // String[] randoms = StringGenerateUtil.readArray("C:\\Users\\huazhaoming\\Desktop\\data\\100w_en.txt");
+        String[] randoms = StringGenerateUtil.randomArray(1000000, 5, 0.8f);
         System.out.printf("Data: %s\n", extractSizeOf(randoms));
+        Arrays.parallelSort(randoms);
         Timer t = new Timer();
         if ((flag & 1) > 0) {
             Set<String> set = Set.of(randoms);

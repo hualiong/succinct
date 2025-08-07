@@ -5,42 +5,42 @@ import org.example.succinct.common.RankSelectBitSet3;
 import org.example.succinct.common.SuccinctSet;
 import org.example.succinct.utils.StringEncoder;
 
-import it.unimi.dsi.fastutil.bytes.ByteArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.*;
 
-public class ByteSuccinctSet3 implements SuccinctSet {
-    protected final byte[] labels;
+public class ByteSuccinctSet4 implements SuccinctSet {
+    protected final byte[][] labels;
     protected final RankSelectBitSet3 labelBitmap;
     protected final RankSelectBitSet3 isLeaf;
     protected final StringEncoder encoder;
+    protected final char[] buffer = new char[128];
     
-    public static ByteSuccinctSet3 of(String... keys) {
-        return new ByteSuccinctSet3(keys, "GB18030");
+    public static ByteSuccinctSet4 of(String... keys) {
+        return new ByteSuccinctSet4(keys, "GB18030");
     }
 
-    public ByteSuccinctSet3(String[] keys, String charset) {
+    public ByteSuccinctSet4(String[] keys, String charset) {
         // 转换为字节数组并排序
         encoder = new StringEncoder(Charset.forName(charset));
-        byte[][] keyBytes = new byte[keys.length][];
-        for (int i = 0; i < keys.length; i++) {
-            keyBytes[i] = encoder.encodeToBytes(keys[i]);
-        }
+        Arrays.parallelSort(keys);
+        // byte[][] keyBytes = new byte[keys.length][];
+        // for (int i = 0; i < keys.length; i++) {
+        //     keyBytes[i] = encoder.encodeToBytes(keys[i]);
+        // }
 
-        // 按字节数组字典序排序
-        Arrays.parallelSort(keyBytes, (a, b) -> {
-            int minLen = Math.min(a.length, b.length);
-            for (int i = 0; i < minLen; i++) {
-                int cmp = Byte.compare(a[i], b[i]);
-                if (cmp != 0)
-                    return cmp;
-            }
-            return a.length - b.length;
-        });
-
-        ByteArrayList labels = new ByteArrayList();
+        // // 按字节数组字典序排序
+        // Arrays.parallelSort(keyBytes, (a, b) -> {
+        //     int minLen = Math.min(a.length, b.length);
+        //     for (int i = 0; i < minLen; i++) {
+        //         int cmp = Byte.compare(a[i], b[i]);
+        //         if (cmp != 0)
+        //             return cmp;
+        //     }
+        //     return a.length - b.length;
+        // });
+        ObjectArrayList<byte[]> labels = new ObjectArrayList<>();
         RankSelectBitSet3.Builder labelBitmapBuilder = new RankSelectBitSet3.Builder();
         RankSelectBitSet3.Builder isLeafBuilder = new RankSelectBitSet3.Builder();
 
@@ -58,7 +58,7 @@ public class ByteSuccinctSet3 implements SuccinctSet {
             // 检查当前节点是否是叶子节点
             boolean isLeafNode = false;
             int ptr = L;
-            while (ptr < R && keyBytes[ptr].length == index) {
+            while (ptr < R && keys[ptr].length() == index) {
                 isLeafNode = true;
                 ptr++;
             }
@@ -68,20 +68,20 @@ public class ByteSuccinctSet3 implements SuccinctSet {
             int start = L;
             while (start < R) {
                 // 跳过长度不足的键
-                if (keyBytes[start].length <= index) {
+                if (keys[start].length() <= index) {
                     start++;
                     continue;
                 }
-                byte currentByte = keyBytes[start][index];
+                char currentChar = keys[start].charAt(index);
                 int end = start + 1;
                 while (end < R) {
-                    if (keyBytes[end].length <= index || keyBytes[end][index] != currentByte) {
+                    if (keys[end].length() <= index || keys[end].charAt(index) != currentChar) {
                         break;
                     }
                     end++;
                 }
                 // 添加子节点标签(byte)
-                labels.add(currentByte);
+                labels.add(encoder.encodeToBytes(currentChar));
                 labelBitmapBuilder.set(bitPos, false); // 子节点标记
                 bitPos++;
                 // 将子节点范围加入队列(字节索引+1)
@@ -96,9 +96,10 @@ public class ByteSuccinctSet3 implements SuccinctSet {
         }
 
         // 转换并初始化标签数组(byte)
-        this.labels = labels.toByteArray();
+        this.labels = labels.toArray(new byte[0][]);
         this.labelBitmap = labelBitmapBuilder.build(true);
         this.isLeaf = isLeafBuilder.build(false);
+        System.out.printf("bss: labels: %d, bitmap: %d, isLeaf: %d\n", this.labels.length, labelBitmap.size, isLeaf.size);
     }
 
     public int extract(String key) {
@@ -119,7 +120,9 @@ public class ByteSuccinctSet3 implements SuccinctSet {
             int bitmapIndex;
             while ((bitmapIndex = labelBitmap.select0(id)) >= 0) {
                 id = labelBitmap.rank1(bitmapIndex);
-                str.push(labels[bitmapIndex - id]);
+                for (byte b : labels[bitmapIndex - id]) {
+                    str.push(b);
+                }
             }
             byte[] bytes = new byte[str.size()];
             for (int i = 0; i < bytes.length; i++) {
@@ -131,21 +134,20 @@ public class ByteSuccinctSet3 implements SuccinctSet {
     }
 
     private int getNodeIdByKey(String key) {
-        ByteBuffer buffer = encoder.encodeToBuffer(key);
         int nodeId = 0, bitmapIndex = 0;
-        buffer.rewind();
-        while (buffer.hasRemaining()) {
-            byte b = buffer.get();
+        int length = StringEncoder.getChars(key, buffer);
+        for (int i = 0; i < length; i++) {
             int low = bitmapIndex, mid = -1, high = labelBitmap.select1(nodeId + 1) - 1;
             if (high >= labelBitmap.size || labelBitmap.get(high)) {
                 return -1;
             }
             while (low <= high) {
                 mid = low + high >>> 1;
-                byte label = labels[mid - nodeId];
-                if (label == b) {
+                byte[] label = labels[mid - nodeId];
+                int cmp = Arrays.compare(label, encoder.encodeToBytes(buffer[i]));
+                if (cmp == 0) {
                     break;
-                } else if (label < b) {
+                } else if (cmp < 0) {
                     low = mid + 1;
                 } else {
                     high = mid - 1;
@@ -158,6 +160,19 @@ public class ByteSuccinctSet3 implements SuccinctSet {
             bitmapIndex = labelBitmap.select1(nodeId) + 1;
         }
         return nodeId;
+    }
+
+    public static List<byte[]> splitGb18030Bytes(byte[] bytes) {
+        List<byte[]> bytesList = new ArrayList<>();
+        int i = 0;
+        while (i < bytes.length) {
+            int charLength = (bytes[i] & 0xFF) >= 0x81 ? 2 : 1; // 简单判断
+            byte[] charBytes = new byte[charLength];
+            System.arraycopy(bytes, i, charBytes, 0, charLength);
+            bytesList.add(charBytes);
+            i += charLength;
+        }
+        return bytesList;
     }
 
     // public TermIterator advanceExact(String key) {
@@ -186,6 +201,6 @@ public class ByteSuccinctSet3 implements SuccinctSet {
 
     @Override
     public String toString() {
-        return "ByteSuccinctSet3(" + encoder.charset() + ")[" + labels.length + " labels, " + labelBitmap.size + " bits]";
+        return "ByteSuccinctSet4(" + encoder.charset() + ")[" + labels.length + " labels, " + labelBitmap.size + " bits]";
     }
 }

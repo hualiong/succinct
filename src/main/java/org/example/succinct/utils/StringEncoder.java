@@ -7,6 +7,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
+import java.util.Arrays;
 
 public class StringEncoder {
     private final CharsetEncoder encoder;
@@ -45,6 +46,48 @@ public class StringEncoder {
     public byte[] encodeToBytes(String str) {
         encodeToBuffer(str);
         return getBytesFromBuffer();
+    }
+    
+    /**
+     * 将字符编码为字节数组（创建新数组）
+     */
+    public byte[] encodeToBytes(char ch) {
+        // 优化：ASCII 字符（0-127）直接返回单字节
+        if (ch <= 127 && encoder.canEncode(ch)) {
+            return new byte[] { (byte) ch };
+        }
+        ByteBuffer buffer = encodeToBuffer(ch);
+        byte[] bytes = new byte[buffer.remaining()];
+        buffer.get(bytes);
+        return bytes;
+    }
+
+    /**
+     * 将单个 char 编码到复用的 ByteBuffer（零拷贝）
+     * 注意：返回的 ByteBuffer 内容会在下次编码时被覆盖
+     */
+    public ByteBuffer encodeToBuffer(char ch) {
+        // 复用 CharBuffer
+        charBuffer.clear();
+        charBuffer.put(ch);
+        charBuffer.flip();
+
+        // 复用 ByteBuffer
+        byteBuffer.clear();
+
+        // 执行编码
+        encoder.reset();
+        CoderResult result = encoder.encode(charBuffer, byteBuffer, true);
+        if (!result.isUnderflow()) {
+            throw new IllegalArgumentException("编码失败: " + result);
+        }
+        result = encoder.flush(byteBuffer);
+        if (!result.isUnderflow()) {
+            throw new IllegalArgumentException("刷新失败: " + result);
+        }
+
+        byteBuffer.flip(); // 准备读取
+        return byteBuffer;
     }
 
     /**
@@ -102,51 +145,7 @@ public class StringEncoder {
     }
 
     public static void main(String[] args) {
-        // 使用示例
-        Charset charset = Charset.forName("GB18030");
-        StringEncoder encoder = new StringEncoder(charset);
-        
-        // 测试数据
-        String[] testStrings = {
-            "Hello, World!",
-            "Java性能优化",
-            "复用对象减少内存分配",
-            "The quick brown fox jumps over the lazy dog"
-        };
-        
-        // 性能测试
-        int iterations = 100_000;
-        long startTime, duration;
-        
-        // 测试传统getBytes()
-        startTime = System.nanoTime();
-        for (int i = 0; i < iterations; i++) {
-            for (String str : testStrings) {
-                byte[] bytes = str.getBytes(charset);
-            }
-        }
-        duration = System.nanoTime() - startTime;
-        System.out.printf("传统getBytes()耗时: %,d ns%n", duration);
-        
-        // 测试优化后的编码器
-        startTime = System.nanoTime();
-        for (int i = 0; i < iterations; i++) {
-            for (String str : testStrings) {
-                byte[] bytes = encoder.encodeToBytes(str);
-            }
-        }
-        duration = System.nanoTime() - startTime;
-        System.out.printf("优化编码器耗时:   %,d ns%n", duration);
-        
-        // 测试零拷贝方法
-        startTime = System.nanoTime();
-        for (int i = 0; i < iterations; i++) {
-            for (String str : testStrings) {
-                ByteBuffer buffer = encoder.encodeToBuffer(str);
-                // 这里可以直接使用buffer，无需复制
-            }
-        }
-        duration = System.nanoTime() - startTime;
-        System.out.printf("零拷贝方法耗时:   %,d ns%n", duration);
+        StringEncoder encoder = new StringEncoder(Charset.forName("GB18030"));
+        System.out.println(Arrays.toString(encoder.encodeToBytes("中")));
     }
 }
