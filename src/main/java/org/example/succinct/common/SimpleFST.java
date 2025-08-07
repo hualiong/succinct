@@ -1,27 +1,26 @@
 package org.example.succinct.common;
 
-import java.io.IOException;
-import java.util.Arrays;
-
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FSTCompiler;
-import org.apache.lucene.util.fst.NoOutputs;
+import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.Util;
 
-public class SimpleFSA implements Accountable {
-    private final FST<Object> fst;
+import java.io.IOException;
+import java.util.Map;
 
-    public SimpleFSA(String[] input) {
-        NoOutputs outputs = NoOutputs.getSingleton();
-        FSTCompiler<Object> compiler = new FSTCompiler.Builder<>(FST.INPUT_TYPE.BYTE1, outputs).build();
+public class SimpleFST<T> implements Accountable {
+    private final FST<T> fst;
+
+    public SimpleFST(Map<BytesRef, T> input, Outputs<T> outputs) {
+        FSTCompiler<T> compiler = new FSTCompiler.Builder<>(FST.INPUT_TYPE.BYTE1, outputs).build();
         try {
             IntsRefBuilder scratchInts = new IntsRefBuilder();
-            for (String str : input) {
-                Util.toIntsRef(new BytesRef(str), scratchInts);
-                compiler.add(scratchInts.get(), outputs.getNoOutput());
+            for (Map.Entry<BytesRef, T> entry : input.entrySet()) {
+                Util.toIntsRef(entry.getKey(), scratchInts);
+                compiler.add(scratchInts.get(), entry.getValue());
             }
             fst = FST.fromFSTReader(compiler.compile(), compiler.getFSTReader());
         } catch (IOException e) {
@@ -30,12 +29,20 @@ public class SimpleFSA implements Accountable {
     }
 
     public boolean contains(String term) {
+        return get(term) != null;
+    }
+
+    public T get(String term) {
+        return get(new BytesRef(term));
+    }
+
+    public T get(BytesRef term) {
         try {
-            return Util.get(fst, new BytesRef(term)) != null;
+            return Util.get(fst, term);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return false;
+        return null;
     }
 
     @Override

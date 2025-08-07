@@ -20,11 +20,17 @@ public class CharSuccinctSet2 implements SuccinctSet, Accountable {
     protected final RankSelectBitSet3 isLeaf;
 
     public static CharSuccinctSet2 of(String... keys) {
-        return new CharSuccinctSet2(keys);
+        return new CharSuccinctSet2(keys, false);
     }
 
-    public CharSuccinctSet2(String... keys) {
-        Arrays.parallelSort(keys);
+    public static CharSuccinctSet2 sortedOf(String... keys) {
+        return new CharSuccinctSet2(keys, true);
+    }
+
+    public CharSuccinctSet2(String[] keys, boolean sorted) {
+        if (!sorted) {
+            Arrays.parallelSort(keys);
+        }
         CharArrayList labels = new CharArrayList();
         RankSelectBitSet3.Builder labelBitmapBuilder = new RankSelectBitSet3.Builder();
         RankSelectBitSet3.Builder isLeafBuilder = new RankSelectBitSet3.Builder();

@@ -1,8 +1,6 @@
 package org.example.succinct;
 
 import it.unimi.dsi.fastutil.chars.CharArrayList;
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.example.succinct.common.Range;
 import org.example.succinct.common.RankSelectBitSet3;
 import org.example.succinct.common.SuccinctSet;
@@ -10,8 +8,6 @@ import org.example.succinct.utils.StringEncoder;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 import java.util.Queue;
 
 public class CharSuccinctSet3 implements SuccinctSet {
@@ -21,11 +17,17 @@ public class CharSuccinctSet3 implements SuccinctSet {
     protected final RankSelectBitSet3 isLeaf;
 
     public static CharSuccinctSet3 of(String... keys) {
-        return new CharSuccinctSet3(keys);
+        return new CharSuccinctSet3(keys, false);
     }
 
-    public CharSuccinctSet3(String... keys) {
-        Arrays.parallelSort(keys);
+    public static CharSuccinctSet3 sortedOf(String... keys) {
+        return new CharSuccinctSet3(keys, true);
+    }
+
+    public CharSuccinctSet3(String[] keys, boolean sorted) {
+        if (!sorted) {
+            Arrays.parallelSort(keys);
+        }
         CharArrayList labels = new CharArrayList();
         RankSelectBitSet3.Builder labelBitmapBuilder = new RankSelectBitSet3.Builder();
         RankSelectBitSet3.Builder isLeafBuilder = new RankSelectBitSet3.Builder();

@@ -52,22 +52,22 @@ public class SuccinctSetTests {
         SimpleFSA fsa = new SimpleFSA(copyOf);
         Timer t = new Timer();
         System.out.printf("Data: %s\n", extractSizeOf(randoms));
-        t.multi(set::contains, randoms);
+        t.multi(randoms, set::contains);
         System.out.printf("SetN: %dms | %s\n", t.sum(), extractSizeOf(set));
         t.reset();
-        t.multi(bss3::contains, randoms);
+        t.multi(randoms, bss3::contains);
         System.out.printf("ByteSuccinctSet3: %dms | %s\n", t.sum(), extractSizeOf(bss3));
         t.reset();
-        t.multi(bss2::contains, randoms);
+        t.multi(randoms, bss2::contains);
         System.out.printf("ByteSuccinctSet2: %dms | %s\n", t.sum(), extractSizeOf(bss2));
         t.reset();
-        t.multi(css3::contains, randoms);
+        t.multi(randoms, css3::contains);
         System.out.printf("CharSuccinctSet3: %dms | %s\n", t.sum(), extractSizeOf(css3));
         t.reset();
-        t.multi(css2::contains, randoms);
+        t.multi(randoms, css2::contains);
         System.out.printf("CharSuccinctSet2: %dms | %s\n", t.sum(), extractSizeOf(css2));
         t.reset();
-        t.multi(fsa::contains, randoms);
+        t.multi(randoms, fsa::contains);
         System.out.printf("FSA: %dms | %s\n", t.sum(), extractSizeOf(fsa));
     }
 
@@ -82,9 +82,13 @@ public class SuccinctSetTests {
     }
 
     public static String sizeOf(Object o) {
-        long bytes = o instanceof Accountable ? RamUsageEstimator.sizeOf((Accountable) o)
+        long bytes = o instanceof Accountable ? RamUsageEstimator.sizeOfObject(o)
                 : GraphLayout.parseInstance(o).totalSize();
         return RamUsageEstimator.humanReadableUnits(bytes);
+    }
+
+    public static String computeSizeOf(Object o) {
+        return RamUsageEstimator.humanReadableUnits(RamUsageEstimator.sizeOfObject(o));
     }
 
     public static String extractSizeOf(Object o) {

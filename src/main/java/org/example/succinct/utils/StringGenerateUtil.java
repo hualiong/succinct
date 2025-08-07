@@ -10,8 +10,12 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -50,7 +54,7 @@ public class StringGenerateUtil {
     static {
         // 英文字符集（字母+数字+标点）
         String engChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" +
-                         "!@#$%^&*()_+-=[]{}|;:,.<>?/`~\"'\\ ";
+                         "!@#$%^&*()_+-=[]{}|;:,.<>?/`~\"'\\";
         ENGLISH_CHARS = engChars.toCharArray();
         
         // 中文字符集（常用汉字+标点）
@@ -138,6 +142,24 @@ public class StringGenerateUtil {
         return new String[0];
     }
 
+    public static List<String> readList(String filePath) {
+        try (Stream<String> stream = Files.lines(Paths.get(filePath))) {
+            return stream.toList();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return Collections.emptyList();
+    }
+
+    public static String[] readArray(String filePath, Function<String, String> f) {
+        try (Stream<String> stream = Files.lines(Paths.get(filePath))) {
+            return stream.map(f).toArray(String[]::new);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return new String[0];
+    }
+
     public static void writeToFile(String[] lines, String filePath) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
             for (String line : lines) {
@@ -150,8 +172,13 @@ public class StringGenerateUtil {
     }
 
     public static void main(String[] args) {
-        String[] randoms = StringGenerateUtil.randomArray(1000000, 8, 0.0f);
-        writeToFile(randoms, "C:\\Users\\huazhaoming\\Desktop\\100w_en.txt");
+        String[] randoms = randomArray(10000000, 5, 1.0f);
+        Arrays.parallelSort(randoms);
+        Random random = new Random();
+        for (int i = 0; i < randoms.length; i++) {
+            randoms[i] += " " + random.nextInt(1, randoms.length + 1);
+        }
+        writeToFile(randoms, "C:\\Users\\huazhaoming\\Desktop\\data\\1000w_cn_kv.txt");
     }
     
     // 常用汉字集合（2500个最常用汉字）

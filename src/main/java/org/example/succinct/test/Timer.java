@@ -3,6 +3,7 @@ package org.example.succinct.test;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+@SuppressWarnings("unused")
 public class Timer {
     private long times = 0L;
     private long count = 0L;
@@ -20,11 +21,11 @@ public class Timer {
         return 1.0 * times / count;
     }
     
-    public double count() {
+    public long count() {
         return count;
     }
 
-    public <T, R> R once(Function<T, R> f, T param) {
+    public <T, R> R once(T param, Function<T, R> f) {
         long start = System.currentTimeMillis();
         R result = f.apply(param);
         times += System.currentTimeMillis() - start;
@@ -32,14 +33,14 @@ public class Timer {
         return result;
     }
 
-    public <T> void once(Consumer<T> f, T param) {
+    public <T> void once(T param, Consumer<T> f) {
         long start = System.currentTimeMillis();
         f.accept(param);
         times += System.currentTimeMillis() - start;
         count++;
     }
 
-    public <T> void multi(Consumer<T> f, T[] params) {
+    public <T> void multi(T[] params, Consumer<T> f) {
         long start = System.currentTimeMillis();
         for (T t : params) {
             f.accept(t);
@@ -47,33 +48,15 @@ public class Timer {
         times += System.currentTimeMillis() - start;
         count += params.length;
     }
-    
-    public void multi(Consumer<Integer> f, Integer[] params) {
-        long start = System.currentTimeMillis();
-        for (Integer t : params) {
-            f.accept(t);
-        }
-        times += System.currentTimeMillis() - start;
-        count += params.length;
-    }
-    
-    public void multi(Consumer<Long> f, Long[] params) {
-        long start = System.currentTimeMillis();
-        for (Long t : params) {
-            f.accept(t);
-        }
-        times += System.currentTimeMillis() - start;
-        count += params.length;
-    }
 
-    public static <T, R> R oncePrinter(Function<T, R> f, T param) {
+    public static <T, R> R oncePrinter(T param, Function<T, R> f) {
         long start = System.currentTimeMillis();
         R result = f.apply(param);
         System.out.printf("%dms\n", System.currentTimeMillis() - start);
         return result;
     }
 
-    public static <T> void oncePrinter(Consumer<T> f, T param) {
+    public static <T> void oncePrinter(T param, Consumer<T> f) {
         long start = System.currentTimeMillis();
         f.accept(param);
         System.out.printf("%dms\n", System.currentTimeMillis() - start);

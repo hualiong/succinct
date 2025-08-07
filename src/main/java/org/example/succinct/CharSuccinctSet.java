@@ -14,11 +14,17 @@ public class CharSuccinctSet implements SuccinctSet, Accountable {
     protected final RankSelectBitSet isLeaf;
 
     public static CharSuccinctSet of(String... keys) {
-        return new CharSuccinctSet(keys);
+        return new CharSuccinctSet(keys, false);
     }
 
-    public CharSuccinctSet(String... keys) {
-        Arrays.parallelSort(keys);
+    public static CharSuccinctSet sortedOf(String... keys) {
+        return new CharSuccinctSet(keys, true);
+    }
+
+    public CharSuccinctSet(String[] keys, boolean sorted) {
+        if (!sorted) {
+            Arrays.parallelSort(keys);
+        }
         List<Character> labelsList = new ArrayList<>();
         RankSelectBitSet.Builder labelBitmapBuilder = new RankSelectBitSet.Builder();
         RankSelectBitSet.Builder isLeafBuilder = new RankSelectBitSet.Builder();

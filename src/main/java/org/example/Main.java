@@ -1,5 +1,6 @@
 package org.example;
 
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.example.succinct.ByteSuccinctSet2;
 import org.example.succinct.ByteSuccinctSet3;
@@ -18,7 +19,7 @@ import java.util.Set;
 
 public class Main {
     public static void main(String[] args) {
-        queryTimeTest();
+        containsTimeTest(2);
     }
     
     public static void encodeTimeTest() {
@@ -28,53 +29,74 @@ public class Main {
         String[] str = new String[10000000];
         Arrays.fill(str, "我是中国人");
         Timer t = new Timer();
-        t.multi(String::toCharArray, str);
+        t.multi(str, String::toCharArray);
         System.out.println("CHAR: " + t.sum() + "ms");
         t.reset();
-        t.multi(s -> StringEncoder.getChars(s, c), str);
+        t.multi(str, s -> StringEncoder.getChars(s, c));
         System.out.println("CHAR(getChars): " + t.sum() + "ms");
         t.reset();
-        t.multi(String::getBytes, str);
+        t.multi(str, String::getBytes);
         System.out.println("UTF-8: " + t.sum() + "ms");
         t.reset();
-        t.multi(encoder::encodeToBytes, str);
+        t.multi(str, encoder::encodeToBytes);
         System.out.println(charset + "(encodeToBytes): " + t.sum() + "ms");
         t.reset();
-        t.multi(encoder::encodeToBuffer, str);
+        t.multi(str, encoder::encodeToBuffer);
         System.out.println(charset + "(encodeToBuffer): " + t.sum() + "ms");
         t.reset();
-        t.multi(s -> s.getBytes(Charset.forName(charset)), str);
+        t.multi(str, s -> s.getBytes(Charset.forName(charset)));
         System.out.println(charset + ": " + t.sum() + "ms");
     }
 
-    public static void queryTimeTest() {
-        int count = 2000000;
-        String[] randoms = StringGenerateUtil.readArray("C:\\Users\\huazhaoming\\Desktop\\key.txt");
-        // Set<String> set = Set.of(randoms);
-        SuccinctSet bss3 = ByteSuccinctSet3.of(randoms);
-        SuccinctSet bss2 = ByteSuccinctSet2.of(randoms);
-        SuccinctSet css3 = CharSuccinctSet3.of(randoms);
-        SuccinctSet css2 = CharSuccinctSet2.of(randoms);
-        SimpleFSA fsa = new SimpleFSA(randoms);
-        Timer t = new Timer();
+    public static void containsTimeTest(int flag) {
+        String[] randoms = StringGenerateUtil.readArray("C:\\Users\\huazhaoming\\Desktop\\data\\100w_en.txt");
         System.out.printf("Data: %s\n", extractSizeOf(randoms));
-        // t.multi(set::contains, randoms);
-        // System.out.printf("SetN: %dms | %s\n", t.sum(), extractSizeOf(set));
-        // t.reset();
-        t.multi(bss3::contains, randoms);
-        System.out.printf("ByteSuccinctSet3: %dms | %s\n", t.sum(), extractSizeOf(bss3));
-        t.reset();
-        t.multi(bss2::contains, randoms);
-        System.out.printf("ByteSuccinctSet2: %dms | %s\n", t.sum(), extractSizeOf(bss2));
-        t.reset();
-        t.multi(css3::contains, randoms);
-        System.out.printf("CharSuccinctSet3: %dms | %s\n", t.sum(), extractSizeOf(css3));
-        t.reset();
-        t.multi(css2::contains, randoms);
-        System.out.printf("CharSuccinctSet2: %dms | %s\n", t.sum(), extractSizeOf(css2));
-        t.reset();
-        t.multi(fsa::contains, randoms);
-        System.out.printf("FSA: %dms | %s\n", t.sum(), extractSizeOf(fsa));
+        Timer t = new Timer();
+        if ((flag & 1) > 0) {
+            Set<String> set = Set.of(randoms);
+            t.multi(randoms, set::contains);
+            System.out.printf("SetN: %dms | %s\n", t.sum(), extractSizeOf(set));
+            t.reset();
+        }
+        if ((flag & 2) > 0) {
+            SimpleFSA fsa = new SimpleFSA(randoms);
+            t.multi(randoms, fsa::contains);
+            System.out.printf("FSA: %dms | %s\n", t.sum(), extractSizeOf(fsa));
+        }
+        if ((flag & 4) > 0) {
+            SuccinctSet bss2 = ByteSuccinctSet2.of(randoms);
+            t.multi(randoms, bss2::contains);
+            System.out.printf("ByteSuccinctSet2: %dms | %s\n", t.sum(), extractSizeOf(bss2));
+            t.reset();
+        }
+        if ((flag & 8) > 0) {
+            SuccinctSet bss3 = ByteSuccinctSet3.of(randoms);
+            t.multi(randoms, bss3::contains);
+            System.out.printf("ByteSuccinctSet3: %dms | %s\n", t.sum(), extractSizeOf(bss3));
+            t.reset();
+        }
+        if ((flag & 16) > 0) {
+            SuccinctSet css2 = CharSuccinctSet2.sortedOf(randoms);
+            t.multi(randoms, css2::contains);
+            System.out.printf("CharSuccinctSet2: %dms | %s\n", t.sum(), extractSizeOf(css2));
+            t.reset();
+        }
+        if ((flag & 32) > 0) {
+            SuccinctSet css3 = CharSuccinctSet3.sortedOf(randoms);
+            t.multi(randoms, css3::contains);
+            System.out.printf("CharSuccinctSet3: %dms | %s\n", t.sum(), extractSizeOf(css3));
+            t.reset();
+        }
+    }
+
+    public static String sizeOf(Object o) {
+        long bytes = o instanceof Accountable ? RamUsageEstimator.sizeOfObject(o)
+                : GraphLayout.parseInstance(o).totalSize();
+        return RamUsageEstimator.humanReadableUnits(bytes);
+    }
+
+    public static String computeSizeOf(Object o) {
+        return RamUsageEstimator.humanReadableUnits(RamUsageEstimator.sizeOfObject(o));
     }
 
     public static String extractSizeOf(Object o) {
