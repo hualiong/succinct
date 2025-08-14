@@ -1,32 +1,35 @@
-package org.example.succinct;
+package org.example.succinct.core;
 
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.example.succinct.common.Range;
 import org.example.succinct.common.RankSelectBitSet3;
 import org.example.succinct.common.SuccinctSet;
-import org.example.succinct.utils.StringEncoder;
 
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.*;
 
-public class ByteSuccinctSet3 implements SuccinctSet {
+/**
+ * 基于 byte 数组实现的第二代 Succinct Set
+ */
+public class ByteSuccinctSet2 implements SuccinctSet, Accountable {
+    protected final Charset charset;
     protected final byte[] labels;
     protected final RankSelectBitSet3 labelBitmap;
     protected final RankSelectBitSet3 isLeaf;
-    protected final StringEncoder encoder;
-    
-    public static ByteSuccinctSet3 of(String... keys) {
-        return new ByteSuccinctSet3(keys, "GB18030");
+
+    public static ByteSuccinctSet2 of(String... keys) {
+        return new ByteSuccinctSet2(keys, "GB18030");
     }
 
-    public ByteSuccinctSet3(String[] keys, String charset) {
+    public ByteSuccinctSet2(String[] keys, String charset) {
         // 转换为字节数组并排序
-        encoder = new StringEncoder(Charset.forName(charset));
+        this.charset = Charset.forName(charset);
         byte[][] keyBytes = new byte[keys.length][];
         for (int i = 0; i < keys.length; i++) {
-            keyBytes[i] = encoder.encodeToBytes(keys[i]);
+            keyBytes[i] = keys[i].getBytes(this.charset);
         }
 
         // 按字节数组字典序排序
@@ -126,17 +129,27 @@ public class ByteSuccinctSet3 implements SuccinctSet {
             for (int i = 0; i < bytes.length; i++) {
                 bytes[i] = str.pop();
             }
-            return new String(bytes, encoder.charset());
+            return new String(bytes, charset);
         }
         return null;
     }
 
     private int getNodeIdByKey(String key) {
-        ByteBuffer buffer = encoder.encodeToBuffer(key);
+        byte[] bytes = key.getBytes(charset);
         int nodeId = 0, bitmapIndex = 0;
-        buffer.rewind();
-        while (buffer.hasRemaining()) {
-            byte b = buffer.get();
+        for (byte b : bytes) {
+            // while (true) {
+            // if (bitmapIndex >= labelBitmap.size || labelBitmap.get(bitmapIndex)) {
+            // return -1;
+            // }
+            // int labelIndex = bitmapIndex - nodeId;
+            // if (labelIndex < labels.length && labels[labelIndex] == b) {
+            // break;
+            // }
+            // bitmapIndex++;
+            // }
+            // nodeId = bitmapIndex + 1 - nodeId;
+            // bitmapIndex = labelBitmap.select1(nodeId) + 1;
             int low = bitmapIndex, mid = -1, high = labelBitmap.select1(nodeId + 1) - 1;
             if (high >= labelBitmap.size || labelBitmap.get(high)) {
                 return -1;
@@ -161,6 +174,10 @@ public class ByteSuccinctSet3 implements SuccinctSet {
         return nodeId;
     }
 
+    // public TermIterator advanceExact(String key) {
+
+    // }
+
     public TermIterator iterator() {
         return new TermIterator();
     }
@@ -182,7 +199,21 @@ public class ByteSuccinctSet3 implements SuccinctSet {
     }
 
     @Override
-    public String toString() {
-        return "ByteSuccinctSet3(" + encoder.charset() + ")[" + labels.length + " labels, " + labelBitmap.size + " bits]";
+    public long ramBytesUsed() {
+        return RamUsageEstimator.sizeOfObject(charset)
+                + RamUsageEstimator.sizeOf(labels)
+                + labelBitmap.ramBytesUsed()
+                + isLeaf.ramBytesUsed();
     }
+
+    @Override
+    public Collection<Accountable> getChildResources() {
+        return List.of(labelBitmap, isLeaf);
+    }
+
+    @Override
+    public String toString() {
+        return "ByteSuccinctSet2(" + charset + ")[" + labels.length + " labels, " + labelBitmap.size + " bits]";
+    }
+
 }

@@ -1,30 +1,35 @@
-package org.example.succinct;
+package org.example.succinct.core;
 
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.example.succinct.common.Range;
-import org.example.succinct.common.RankSelectBitSet;
+import org.example.succinct.common.RankSelectBitSet3;
 import org.example.succinct.common.SuccinctSet;
+import org.example.succinct.utils.StringEncoder;
 
+import it.unimi.dsi.fastutil.bytes.ByteArrayList;
+
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.*;
 
-public class ByteSuccinctSet implements SuccinctSet, Accountable {
-    protected final Charset charset;
+/**
+ * 基于 byte 数组实现的第三代 Succinct Set
+ */
+public class ByteSuccinctSet3 implements SuccinctSet {
     protected final byte[] labels;
-    protected final RankSelectBitSet labelBitmap;
-    protected final RankSelectBitSet isLeaf;
-
-    public static ByteSuccinctSet of(String... keys) {
-        return new ByteSuccinctSet(keys, "GB18030");
+    protected final RankSelectBitSet3 labelBitmap;
+    protected final RankSelectBitSet3 isLeaf;
+    protected final StringEncoder encoder;
+    
+    public static ByteSuccinctSet3 of(String... keys) {
+        return new ByteSuccinctSet3(keys, "GB18030");
     }
 
-    public ByteSuccinctSet(String[] keys, String charset) {
+    public ByteSuccinctSet3(String[] keys, String charset) {
         // 转换为字节数组并排序
-        this.charset = Charset.forName(charset);
+        encoder = new StringEncoder(Charset.forName(charset));
         byte[][] keyBytes = new byte[keys.length][];
         for (int i = 0; i < keys.length; i++) {
-            keyBytes[i] = keys[i].getBytes(this.charset);
+            keyBytes[i] = encoder.encodeToBytes(keys[i]);
         }
 
         // 按字节数组字典序排序
@@ -32,14 +37,15 @@ public class ByteSuccinctSet implements SuccinctSet, Accountable {
             int minLen = Math.min(a.length, b.length);
             for (int i = 0; i < minLen; i++) {
                 int cmp = Byte.compare(a[i], b[i]);
-                if (cmp != 0) return cmp;
+                if (cmp != 0)
+                    return cmp;
             }
             return a.length - b.length;
         });
 
-        List<Byte> labelsList = new ArrayList<>();
-        RankSelectBitSet.Builder labelBitmapBuilder = new RankSelectBitSet.Builder();
-        RankSelectBitSet.Builder isLeafBuilder = new RankSelectBitSet.Builder();
+        ByteArrayList labels = new ByteArrayList();
+        RankSelectBitSet3.Builder labelBitmapBuilder = new RankSelectBitSet3.Builder();
+        RankSelectBitSet3.Builder isLeafBuilder = new RankSelectBitSet3.Builder();
 
         Queue<Range> queue = new ArrayDeque<>();
         queue.add(new Range(0, keys.length, 0)); // 初始字节索引=0
@@ -69,7 +75,6 @@ public class ByteSuccinctSet implements SuccinctSet, Accountable {
                     start++;
                     continue;
                 }
-
                 byte currentByte = keyBytes[start][index];
                 int end = start + 1;
                 while (end < R) {
@@ -78,12 +83,10 @@ public class ByteSuccinctSet implements SuccinctSet, Accountable {
                     }
                     end++;
                 }
-
                 // 添加子节点标签(byte)
-                labelsList.add(currentByte);
+                labels.add(currentByte);
                 labelBitmapBuilder.set(bitPos, false); // 子节点标记
                 bitPos++;
-
                 // 将子节点范围加入队列(字节索引+1)
                 queue.add(new Range(start, end, index + 1));
                 start = end;
@@ -96,58 +99,47 @@ public class ByteSuccinctSet implements SuccinctSet, Accountable {
         }
 
         // 转换并初始化标签数组(byte)
-        this.labels = new byte[labelsList.size()];
-        for (int i = 0; i < labelsList.size(); i++) {
-            labels[i] = labelsList.get(i);
-        }
+        this.labels = labels.toByteArray();
         this.labelBitmap = labelBitmapBuilder.build(true);
         this.isLeaf = isLeafBuilder.build(false);
     }
 
     public int extract(String key) {
         int nodeId = getNodeIdByKey(key);
-        return isLeaf.get(nodeId) ? nodeId : -1;
+        return nodeId >= 0 && isLeaf.get(nodeId) ? nodeId : -1;
     }
 
     @Override
     public boolean contains(String key) {
-        return isLeaf.get(getNodeIdByKey(key));
+        int nodeId = getNodeIdByKey(key);
+        return nodeId >= 0 && isLeaf.get(nodeId);
     }
 
     @Override
     public String get(int nodeId) {
         if (isLeaf.get(nodeId)) {
+            int id = nodeId;
             Deque<Byte> str = new LinkedList<>();
             int bitmapIndex;
-            while ((bitmapIndex = labelBitmap.select0(nodeId)) >= 0) {
-                nodeId = labelBitmap.rank1(bitmapIndex);
-                str.push(labels[bitmapIndex - nodeId]);
+            while ((bitmapIndex = labelBitmap.select0(id)) >= 0) {
+                id = labelBitmap.rank1(bitmapIndex);
+                str.push(labels[bitmapIndex - id]);
             }
             byte[] bytes = new byte[str.size()];
             for (int i = 0; i < bytes.length; i++) {
                 bytes[i] = str.pop();
             }
-            return new String(bytes, charset);
+            return new String(bytes, encoder.charset());
         }
         return null;
     }
 
     private int getNodeIdByKey(String key) {
-        byte[] bytes = key.getBytes(charset);
+        ByteBuffer buffer = encoder.encodeToBuffer(key);
         int nodeId = 0, bitmapIndex = 0;
-        for (byte b : bytes) {
-            // while (true) {
-            //     if (bitmapIndex >= labelBitmap.size || labelBitmap.get(bitmapIndex)) {
-            //         return -1;
-            //     }
-            //     int labelIndex = bitmapIndex - nodeId;
-            //     if (labelIndex < labels.length && labels[labelIndex] == b) {
-            //         break;
-            //     }
-            //     bitmapIndex++;
-            // }
-            // nodeId = bitmapIndex + 1 - nodeId;
-            // bitmapIndex = labelBitmap.select1(nodeId) + 1;
+        buffer.rewind();
+        while (buffer.hasRemaining()) {
+            byte b = buffer.get();
             int low = bitmapIndex, mid = -1, high = labelBitmap.select1(nodeId + 1) - 1;
             if (high >= labelBitmap.size || labelBitmap.get(high)) {
                 return -1;
@@ -172,40 +164,28 @@ public class ByteSuccinctSet implements SuccinctSet, Accountable {
         return nodeId;
     }
 
-    // public SuccinctIterator advanceExact(String key) {
-
-    // }
-
-    // public class SuccinctIterator implements Iterator<String> {
-    //     @Override
-    //     public boolean hasNext() {
-    //         // TODO Auto-generated method stub
-    //         throw new UnsupportedOperationException("Unimplemented method 'hasNext'");
-    //     }
-
-    //     @Override
-    //     public String next() {
-    //         // TODO Auto-generated method stub
-    //         throw new UnsupportedOperationException("Unimplemented method 'next'");
-    //     }
-    // }
-
-    @Override
-    public long ramBytesUsed() {
-        return RamUsageEstimator.sizeOfObject(charset)
-            + RamUsageEstimator.sizeOf(labels)
-            + labelBitmap.ramBytesUsed()
-            + isLeaf.ramBytesUsed();
+    public TermIterator iterator() {
+        return new TermIterator();
     }
 
-    @Override
-    public Collection<Accountable> getChildResources() {
-        return List.of(labelBitmap, isLeaf);
+    public class TermIterator implements Iterator<String> {
+        private int index = isLeaf.nextSetBit(0);
+
+        @Override
+        public boolean hasNext() {
+            return index >= 0;
+        }
+
+        @Override
+        public String next() {
+            String str = get(index);
+            index = isLeaf.nextSetBit(index + 1);
+            return str;
+        }
     }
 
     @Override
     public String toString() {
-        return "ByteSuccinctSet(" + charset + ")[" + labels.length + " labels, " + labelBitmap.size + " bits]";
+        return "ByteSuccinctSet3(" + encoder.charset() + ")[" + labels.length + " labels, " + labelBitmap.size + " bits]";
     }
-
 }

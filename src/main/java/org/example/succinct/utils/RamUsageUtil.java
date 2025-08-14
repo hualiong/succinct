@@ -1,7 +1,8 @@
 package org.example.succinct.utils;
 
-import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.example.succinct.common.SuccinctSet;
+import org.example.succinct.test.Timer;
 import org.openjdk.jol.info.GraphLayout;
 
 import java.util.function.Function;
@@ -20,11 +21,9 @@ public class RamUsageUtil {
     }
 
     public static void printSizeOf(String[] randoms, Function<String[], Object> f) {
-        long start = System.currentTimeMillis();
+        long start = Timer.now();
         Object o = f.apply(randoms);
-        long bytes = RamUsageEstimator.sizeOfObject(o);
-        String name = o instanceof Accountable ? o.toString() : o.getClass().getSimpleName();
-        System.out.printf("%9s | %6d ms - %s\n", RamUsageEstimator.humanReadableUnits(bytes),
-                System.currentTimeMillis() - start, name);
+        String name = o instanceof SuccinctSet ? o.toString() : o.getClass().getSimpleName();
+        System.out.printf("%9s | %6d ms - %s\n", estimateSizeOf(o), Timer.ms(start), name);
     }
 }

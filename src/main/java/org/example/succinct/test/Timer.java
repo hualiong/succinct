@@ -10,6 +10,10 @@ public class Timer {
         return (end - start) / 1000.0;
     }
 
+    public static long ms(long start) {
+        return now() - start;
+    }
+
     public static long ms(long start, long end) {
         return end - start;
     }

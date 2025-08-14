@@ -1,33 +1,33 @@
-package org.example.succinct;
+package org.example.succinct.core;
 
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.RamUsageEstimator;
+import it.unimi.dsi.fastutil.chars.CharArrayList;
 import org.example.succinct.common.Range;
 import org.example.succinct.common.RankSelectBitSet3;
 import org.example.succinct.common.SuccinctSet;
-
-import it.unimi.dsi.fastutil.chars.CharArrayList;
+import org.example.succinct.utils.StringEncoder;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 import java.util.Queue;
 
-public class CharSuccinctSet2 implements SuccinctSet, Accountable {
+/**
+ * 基于 char 数组实现的第三代 Succinct Set
+ */
+public class CharSuccinctSet3 implements SuccinctSet {
+    protected final char[] buffer = new char[128];
     protected final char[] labels;
     protected final RankSelectBitSet3 labelBitmap;
     protected final RankSelectBitSet3 isLeaf;
 
-    public static CharSuccinctSet2 of(String... keys) {
-        return new CharSuccinctSet2(keys, false);
+    public static CharSuccinctSet3 of(String... keys) {
+        return new CharSuccinctSet3(keys, false);
     }
 
-    public static CharSuccinctSet2 sortedOf(String... keys) {
-        return new CharSuccinctSet2(keys, true);
+    public static CharSuccinctSet3 sortedOf(String... keys) {
+        return new CharSuccinctSet3(keys, true);
     }
 
-    public CharSuccinctSet2(String[] keys, boolean sorted) {
+    public CharSuccinctSet3(String[] keys, boolean sorted) {
         if (!sorted) {
             Arrays.parallelSort(keys);
         }
@@ -91,7 +91,8 @@ public class CharSuccinctSet2 implements SuccinctSet, Accountable {
 
     private int getNodeIdByKey(String key) {
         int nodeId = 0, bitmapIndex = 0;
-        for (char c : key.toCharArray()) {
+        int length = StringEncoder.getChars(key, buffer);
+        for (int i = 0; i < length; i++) {
             int low = bitmapIndex, mid = -1, high = labelBitmap.select1(nodeId + 1) - 1;
             if (high >= labelBitmap.size || labelBitmap.get(high)) {
                 return -1;
@@ -99,9 +100,9 @@ public class CharSuccinctSet2 implements SuccinctSet, Accountable {
             while (low <= high) {
                 mid = low + high >>> 1;
                 char label = labels[mid - nodeId];
-                if (label == c) {
+                if (label == buffer[i]) {
                     break;
-                } else if (label < c) {
+                } else if (label < buffer[i]) {
                     low = mid + 1;
                 } else {
                     high = mid - 1;
@@ -134,18 +135,6 @@ public class CharSuccinctSet2 implements SuccinctSet, Accountable {
     public boolean contains(String key) {
         int nodeId = getNodeIdByKey(key);
         return nodeId >= 0 && isLeaf.get(nodeId);
-    }
-
-    @Override
-    public long ramBytesUsed() {
-        return RamUsageEstimator.sizeOf(labels)
-                + RamUsageEstimator.sizeOf(labelBitmap)
-                + RamUsageEstimator.sizeOf(isLeaf);
-    }
-
-    @Override
-    public Collection<Accountable> getChildResources() {
-        return List.of(labelBitmap, isLeaf);
     }
 
     @Override

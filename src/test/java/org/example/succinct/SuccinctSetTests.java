@@ -3,12 +3,17 @@ package org.example.succinct;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.example.succinct.common.SimpleFSA;
 import org.example.succinct.common.SuccinctSet;
+import org.example.succinct.core.ByteSuccinctSet2;
+import org.example.succinct.core.ByteSuccinctSet3;
+import org.example.succinct.core.CharSuccinctSet;
+import org.example.succinct.core.CharSuccinctSet2;
+import org.example.succinct.core.CharSuccinctSet3;
 import org.example.succinct.test.Recorder;
 import org.example.succinct.utils.StringGenerateUtil;
 import org.junit.Test;
 
 import static org.example.succinct.utils.RamUsageUtil.printSizeOf;
-import static org.example.succinct.utils.RamUsageUtil.estimateSizeOf;
+import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
@@ -49,34 +54,35 @@ public class SuccinctSetTests {
         SuccinctSet css2 = CharSuccinctSet2.of(copyOf);
         SimpleFSA fsa = new SimpleFSA(copyOf);
         Recorder t = new Recorder();
-        System.out.printf("Data: %s\n", estimateSizeOf(randoms));
+        System.out.printf("Data: %s\n", sizeOf(randoms));
         t.multi(randoms, set::contains);
-        System.out.printf("SetN: %dms | %s\n", t.sum(), estimateSizeOf(set));
+        System.out.printf("SetN: %dms | %s\n", t.sum(), sizeOf(set));
         t.reset();
         t.multi(randoms, bss3::contains);
-        System.out.printf("ByteSuccinctSet3: %dms | %s\n", t.sum(), estimateSizeOf(bss3));
+        System.out.printf("ByteSuccinctSet3: %dms | %s\n", t.sum(), sizeOf(bss3));
         t.reset();
         t.multi(randoms, bss2::contains);
-        System.out.printf("ByteSuccinctSet2: %dms | %s\n", t.sum(), estimateSizeOf(bss2));
+        System.out.printf("ByteSuccinctSet2: %dms | %s\n", t.sum(), sizeOf(bss2));
         t.reset();
         t.multi(randoms, css3::contains);
-        System.out.printf("CharSuccinctSet3: %dms | %s\n", t.sum(), estimateSizeOf(css3));
+        System.out.printf("CharSuccinctSet3: %dms | %s\n", t.sum(), sizeOf(css3));
         t.reset();
         t.multi(randoms, css2::contains);
-        System.out.printf("CharSuccinctSet2: %dms | %s\n", t.sum(), estimateSizeOf(css2));
+        System.out.printf("CharSuccinctSet2: %dms | %s\n", t.sum(), sizeOf(css2));
         t.reset();
         t.multi(randoms, fsa::contains);
-        System.out.printf("FSA: %dms | %s\n", t.sum(), estimateSizeOf(fsa));
+        System.out.printf("FSA: %dms | %s\n", t.sum(), sizeOf(fsa));
     }
 
     @Test
     public void memoryTest() {
-        String[] randoms = StringGenerateUtil.randomArray(10000000, 5, 1.0f);
+        String[] randoms = StringGenerateUtil.randomArray(1000000, 8, 0.0f);
         printSizeOf(randoms, r -> randoms);
-        // printSizeOf(randoms, Set::of);
-        printSizeOf(randoms, r -> new ByteSuccinctSet(r, "UTF-8"));
-        printSizeOf(randoms, ByteSuccinctSet::of);
-        printSizeOf(randoms, CharSuccinctSet::of);
+        Arrays.parallelSort(randoms);
+        // printSizeOf(randoms, r -> new ByteSuccinctSet(r, "UTF-8"));
+        // printSizeOf(randoms, ByteSuccinctSet::of);
+        printSizeOf(randoms, r -> new CharSuccinctSet(r, true));
+        printSizeOf(randoms, SimpleFSA::new);
     }
 
 }

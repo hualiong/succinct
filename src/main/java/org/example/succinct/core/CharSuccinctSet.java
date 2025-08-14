@@ -1,4 +1,4 @@
-package org.example.succinct;
+package org.example.succinct.core;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -8,6 +8,9 @@ import org.example.succinct.common.SuccinctSet;
 
 import java.util.*;
 
+/**
+ * 基于 char 数组实现的第一代 Succinct Set
+ */
 public class CharSuccinctSet implements SuccinctSet, Accountable {
     protected final char[] labels;
     protected final RankSelectBitSet labelBitmap;
