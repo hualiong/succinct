@@ -132,7 +132,8 @@ public class CharSuccinctSet2 implements SuccinctSet, Accountable {
 
     @Override
     public boolean contains(String key) {
-        return isLeaf.get(getNodeIdByKey(key));
+        int nodeId = getNodeIdByKey(key);
+        return nodeId >= 0 && isLeaf.get(nodeId);
     }
 
     @Override

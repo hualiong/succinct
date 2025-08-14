@@ -1,21 +1,19 @@
 package org.example.succinct;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.example.succinct.common.SimpleFSA;
 import org.example.succinct.common.SuccinctSet;
-import org.example.succinct.test.Timer;
+import org.example.succinct.test.Recorder;
 import org.example.succinct.utils.StringGenerateUtil;
 import org.junit.Test;
-import org.openjdk.jol.info.GraphLayout;
 
+import static org.example.succinct.utils.RamUsageUtil.printSizeOf;
+import static org.example.succinct.utils.RamUsageUtil.estimateSizeOf;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
 import java.util.Set;
 import java.util.HashSet;
-import java.util.function.Function;
 
 public class SuccinctSetTests {
     @Test
@@ -50,25 +48,25 @@ public class SuccinctSetTests {
         SuccinctSet css3 = CharSuccinctSet3.of(copyOf);
         SuccinctSet css2 = CharSuccinctSet2.of(copyOf);
         SimpleFSA fsa = new SimpleFSA(copyOf);
-        Timer t = new Timer();
-        System.out.printf("Data: %s\n", extractSizeOf(randoms));
+        Recorder t = new Recorder();
+        System.out.printf("Data: %s\n", estimateSizeOf(randoms));
         t.multi(randoms, set::contains);
-        System.out.printf("SetN: %dms | %s\n", t.sum(), extractSizeOf(set));
+        System.out.printf("SetN: %dms | %s\n", t.sum(), estimateSizeOf(set));
         t.reset();
         t.multi(randoms, bss3::contains);
-        System.out.printf("ByteSuccinctSet3: %dms | %s\n", t.sum(), extractSizeOf(bss3));
+        System.out.printf("ByteSuccinctSet3: %dms | %s\n", t.sum(), estimateSizeOf(bss3));
         t.reset();
         t.multi(randoms, bss2::contains);
-        System.out.printf("ByteSuccinctSet2: %dms | %s\n", t.sum(), extractSizeOf(bss2));
+        System.out.printf("ByteSuccinctSet2: %dms | %s\n", t.sum(), estimateSizeOf(bss2));
         t.reset();
         t.multi(randoms, css3::contains);
-        System.out.printf("CharSuccinctSet3: %dms | %s\n", t.sum(), extractSizeOf(css3));
+        System.out.printf("CharSuccinctSet3: %dms | %s\n", t.sum(), estimateSizeOf(css3));
         t.reset();
         t.multi(randoms, css2::contains);
-        System.out.printf("CharSuccinctSet2: %dms | %s\n", t.sum(), extractSizeOf(css2));
+        System.out.printf("CharSuccinctSet2: %dms | %s\n", t.sum(), estimateSizeOf(css2));
         t.reset();
         t.multi(randoms, fsa::contains);
-        System.out.printf("FSA: %dms | %s\n", t.sum(), extractSizeOf(fsa));
+        System.out.printf("FSA: %dms | %s\n", t.sum(), estimateSizeOf(fsa));
     }
 
     @Test
@@ -79,38 +77,6 @@ public class SuccinctSetTests {
         printSizeOf(randoms, r -> new ByteSuccinctSet(r, "UTF-8"));
         printSizeOf(randoms, ByteSuccinctSet::of);
         printSizeOf(randoms, CharSuccinctSet::of);
-    }
-
-    public static String sizeOf(Object o) {
-        long bytes = o instanceof Accountable ? RamUsageEstimator.sizeOfObject(o)
-                : GraphLayout.parseInstance(o).totalSize();
-        return RamUsageEstimator.humanReadableUnits(bytes);
-    }
-
-    public static String computeSizeOf(Object o) {
-        return RamUsageEstimator.humanReadableUnits(RamUsageEstimator.sizeOfObject(o));
-    }
-
-    public static String extractSizeOf(Object o) {
-        return RamUsageEstimator.humanReadableUnits(GraphLayout.parseInstance(o).totalSize());
-    }
-
-    // private static void printSizeOf(Object o) {
-    // long bytes = o instanceof Accountable ?
-    // RamUsageEstimator.sizeOf((Accountable) o)
-    // : RamUsageEstimator.sizeOfObject(o);
-    // System.out.printf("%s: %s\n", o,
-    // RamUsageEstimator.humanReadableUnits(bytes));
-    // }
-
-    private static void printSizeOf(String[] randoms, Function<String[], Object> f) {
-        long start = System.currentTimeMillis();
-        Object o = f.apply(randoms);
-        long bytes = o instanceof Accountable ? RamUsageEstimator.sizeOf((Accountable) o)
-                : RamUsageEstimator.sizeOfObject(o);
-        String name = o instanceof Accountable ? o.toString() : o.getClass().getSimpleName();
-        System.out.printf("%9s | %6d ms - %s\n", RamUsageEstimator.humanReadableUnits(bytes),
-                System.currentTimeMillis() - start, name);
     }
 
 }

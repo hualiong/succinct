@@ -130,7 +130,8 @@ public class CharSuccinctSet3 implements SuccinctSet {
 
     @Override
     public boolean contains(String key) {
-        return isLeaf.get(getNodeIdByKey(key));
+        int nodeId = getNodeIdByKey(key);
+        return nodeId >= 0 && isLeaf.get(nodeId);
     }
 
     @Override

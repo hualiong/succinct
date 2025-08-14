@@ -1,10 +1,12 @@
 package org.example.succinct.common;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRefBuilder;
+import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.NoOutputs;
@@ -12,6 +14,10 @@ import org.apache.lucene.util.fst.Util;
 
 public class SimpleFSA implements Accountable {
     private final FST<Object> fst;
+
+    public SimpleFSA(FST<Object> fst) {
+        this.fst = fst;
+    }
 
     public SimpleFSA(String[] input) {
         NoOutputs outputs = NoOutputs.getSingleton();
@@ -35,6 +41,18 @@ public class SimpleFSA implements Accountable {
             e.printStackTrace();
         }
         return false;
+    }
+
+    public BytesRefFSTEnum<Object> iterator() {
+        return new BytesRefFSTEnum<>(fst);
+    }
+
+    public void save(Path path) {
+        try {
+            fst.save(path);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

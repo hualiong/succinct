@@ -103,12 +103,13 @@ public class ByteSuccinctSet3 implements SuccinctSet {
 
     public int extract(String key) {
         int nodeId = getNodeIdByKey(key);
-        return isLeaf.get(nodeId) ? nodeId : -1;
+        return nodeId >= 0 && isLeaf.get(nodeId) ? nodeId : -1;
     }
 
     @Override
     public boolean contains(String key) {
-        return isLeaf.get(getNodeIdByKey(key));
+        int nodeId = getNodeIdByKey(key);
+        return nodeId >= 0 && isLeaf.get(nodeId);
     }
 
     @Override
@@ -159,10 +160,6 @@ public class ByteSuccinctSet3 implements SuccinctSet {
         }
         return nodeId;
     }
-
-    // public TermIterator advanceExact(String key) {
-
-    // }
 
     public TermIterator iterator() {
         return new TermIterator();

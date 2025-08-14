@@ -103,12 +103,13 @@ public class ByteSuccinctSet2 implements SuccinctSet, Accountable {
 
     public int extract(String key) {
         int nodeId = getNodeIdByKey(key);
-        return isLeaf.get(nodeId) ? nodeId : -1;
+        return nodeId >= 0 && isLeaf.get(nodeId) ? nodeId : -1;
     }
 
     @Override
     public boolean contains(String key) {
-        return isLeaf.get(getNodeIdByKey(key));
+        int nodeId = getNodeIdByKey(key);
+        return nodeId >= 0 && isLeaf.get(nodeId);
     }
 
     @Override
@@ -119,7 +120,7 @@ public class ByteSuccinctSet2 implements SuccinctSet, Accountable {
             int bitmapIndex;
             while ((bitmapIndex = labelBitmap.select0(id)) >= 0) {
                 id = labelBitmap.rank1(bitmapIndex);
-                str.push(labels[(int) (bitmapIndex - id)]);
+                str.push(labels[bitmapIndex - id]);
             }
             byte[] bytes = new byte[str.size()];
             for (int i = 0; i < bytes.length; i++) {
@@ -152,7 +153,7 @@ public class ByteSuccinctSet2 implements SuccinctSet, Accountable {
             }
             while (low <= high) {
                 mid = low + high >>> 1;
-                byte label = labels[(int) (mid - nodeId)];
+                byte label = labels[mid - nodeId];
                 if (label == b) {
                     break;
                 } else if (label < b) {
