@@ -2,7 +2,7 @@ package org.example;
 
 import org.example.succinct.core.*;
 import org.example.succinct.common.SimpleFSA;
-import org.example.succinct.common.SuccinctSet;
+import org.example.succinct.api.SuccinctSet;
 import org.example.succinct.test.Recorder;
 import org.example.succinct.utils.StringEncoder;
 import org.example.succinct.utils.StringGenerateUtil;
@@ -13,6 +13,7 @@ import java.util.Set;
 
 import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 
+@SuppressWarnings("unused")
 public class Main {
     public static void main(String[] args) {
         containsTimeTest(42);
@@ -46,7 +47,7 @@ public class Main {
 
     public static void containsTimeTest(int flag) {
         // String[] randoms = StringGenerateUtil.readArray("C:\\Users\\huazhaoming\\Desktop\\data\\100w_en.txt");
-        String[] randoms = StringGenerateUtil.randomArray(1000000, 8, 0.0f);
+        String[] randoms = StringGenerateUtil.randomArray(1000000, 5, 1.0f);
         System.out.printf("Data: %s\n", sizeOf(randoms));
         Arrays.parallelSort(randoms);
         Recorder t = new Recorder();
@@ -60,6 +61,7 @@ public class Main {
             SimpleFSA fsa = new SimpleFSA(randoms);
             t.multi(randoms, fsa::contains);
             System.out.printf("%s: %dms | %s\n", fsa.getClass().getSimpleName(), t.sum(), sizeOf(fsa));
+            t.reset();
         }
         if ((flag & 4) > 0) {
             SuccinctSet bss2 = ByteSuccinctSet2.of(randoms);

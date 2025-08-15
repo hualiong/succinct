@@ -2,12 +2,8 @@ package org.example.succinct;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.example.succinct.common.SimpleFSA;
-import org.example.succinct.common.SuccinctSet;
-import org.example.succinct.core.ByteSuccinctSet2;
-import org.example.succinct.core.ByteSuccinctSet3;
-import org.example.succinct.core.CharSuccinctSet;
-import org.example.succinct.core.CharSuccinctSet2;
-import org.example.succinct.core.CharSuccinctSet3;
+import org.example.succinct.api.SuccinctSet;
+import org.example.succinct.core.*;
 import org.example.succinct.test.Recorder;
 import org.example.succinct.utils.StringGenerateUtil;
 import org.junit.Test;
@@ -34,7 +30,7 @@ public class SuccinctSetTests {
         }
         String[] copyOf = Arrays.copyOf(randoms, count >>> 1);
         SuccinctSet set = ByteSuccinctSet3.of(copyOf);
-        SuccinctSet charSet = CharSuccinctSet2.of(copyOf);
+        SuccinctSet charSet = CharSuccinctSet3.of(copyOf);
         for (String random : randoms) {
             boolean expected = unique.contains(random);
             assertEquals(expected, set.contains(random));

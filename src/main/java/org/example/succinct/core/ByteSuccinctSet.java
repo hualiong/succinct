@@ -1,10 +1,9 @@
 package org.example.succinct.core;
 
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.example.succinct.common.Range;
-import org.example.succinct.common.RankSelectBitSet;
-import org.example.succinct.common.SuccinctSet;
+import org.example.succinct.api.RankSelectBitSet;
+import org.example.succinct.api.SuccinctSet;
+import org.example.succinct.common.RankSelectBitSet1;
 
 import java.nio.charset.Charset;
 import java.util.*;
@@ -12,7 +11,7 @@ import java.util.*;
 /**
  * 基于 byte 数组实现的第一代 Succinct Set
  */
-public class ByteSuccinctSet implements SuccinctSet, Accountable {
+public class ByteSuccinctSet implements SuccinctSet {
     protected final Charset charset;
     protected final byte[] labels;
     protected final RankSelectBitSet labelBitmap;
@@ -41,8 +40,8 @@ public class ByteSuccinctSet implements SuccinctSet, Accountable {
         });
 
         List<Byte> labelsList = new ArrayList<>();
-        RankSelectBitSet.Builder labelBitmapBuilder = new RankSelectBitSet.Builder();
-        RankSelectBitSet.Builder isLeafBuilder = new RankSelectBitSet.Builder();
+        RankSelectBitSet.Builder labelBitmapBuilder = new RankSelectBitSet1.Builder();
+        RankSelectBitSet.Builder isLeafBuilder = new RankSelectBitSet1.Builder();
 
         Queue<Range> queue = new ArrayDeque<>();
         queue.add(new Range(0, keys.length, 0)); // 初始字节索引=0
@@ -140,7 +139,7 @@ public class ByteSuccinctSet implements SuccinctSet, Accountable {
         int nodeId = 0, bitmapIndex = 0;
         for (byte b : bytes) {
             // while (true) {
-            //     if (bitmapIndex >= labelBitmap.size || labelBitmap.get(bitmapIndex)) {
+            //     if (bitmapIndex >= labelBitmap.size( || labelBitmap.get(bitmapIndex)) {
             //         return -1;
             //     }
             //     int labelIndex = bitmapIndex - nodeId;
@@ -152,7 +151,7 @@ public class ByteSuccinctSet implements SuccinctSet, Accountable {
             // nodeId = bitmapIndex + 1 - nodeId;
             // bitmapIndex = labelBitmap.select1(nodeId) + 1;
             int low = bitmapIndex, mid = -1, high = labelBitmap.select1(nodeId + 1) - 1;
-            if (high >= labelBitmap.size || labelBitmap.get(high)) {
+            if (high >= labelBitmap.size() || labelBitmap.get(high)) {
                 return -1;
             }
             while (low <= high) {
@@ -175,40 +174,9 @@ public class ByteSuccinctSet implements SuccinctSet, Accountable {
         return nodeId;
     }
 
-    // public SuccinctIterator advanceExact(String key) {
-
-    // }
-
-    // public class SuccinctIterator implements Iterator<String> {
-    //     @Override
-    //     public boolean hasNext() {
-    //         // TODO Auto-generated method stub
-    //         throw new UnsupportedOperationException("Unimplemented method 'hasNext'");
-    //     }
-
-    //     @Override
-    //     public String next() {
-    //         // TODO Auto-generated method stub
-    //         throw new UnsupportedOperationException("Unimplemented method 'next'");
-    //     }
-    // }
-
-    @Override
-    public long ramBytesUsed() {
-        return RamUsageEstimator.sizeOfObject(charset)
-            + RamUsageEstimator.sizeOf(labels)
-            + labelBitmap.ramBytesUsed()
-            + isLeaf.ramBytesUsed();
-    }
-
-    @Override
-    public Collection<Accountable> getChildResources() {
-        return List.of(labelBitmap, isLeaf);
-    }
-
     @Override
     public String toString() {
-        return "ByteSuccinctSet(" + charset + ")[" + labels.length + " labels, " + labelBitmap.size + " bits]";
+        return "ByteSuccinctSet(" + charset + ")[" + labels.length + " labels, " + labelBitmap.size() + " bits]";
     }
 
 }

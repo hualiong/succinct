@@ -1,4 +1,4 @@
-package org.example.succinct.common;
+package org.example.succinct.api;
 
 public interface SuccinctSet {
     boolean contains(String key);

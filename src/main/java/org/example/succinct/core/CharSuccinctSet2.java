@@ -4,7 +4,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.example.succinct.common.Range;
 import org.example.succinct.common.RankSelectBitSet3;
-import org.example.succinct.common.SuccinctSet;
+import org.example.succinct.api.SuccinctSet;
 
 import it.unimi.dsi.fastutil.chars.CharArrayList;
 

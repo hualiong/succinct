@@ -1,7 +1,7 @@
 package org.example.succinct.utils;
 
 import org.apache.lucene.util.RamUsageEstimator;
-import org.example.succinct.common.SuccinctSet;
+import org.example.succinct.api.SuccinctSet;
 import org.example.succinct.test.Timer;
 import org.openjdk.jol.info.GraphLayout;
 

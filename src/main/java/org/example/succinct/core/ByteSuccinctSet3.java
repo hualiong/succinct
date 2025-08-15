@@ -2,7 +2,7 @@ package org.example.succinct.core;
 
 import org.example.succinct.common.Range;
 import org.example.succinct.common.RankSelectBitSet3;
-import org.example.succinct.common.SuccinctSet;
+import org.example.succinct.api.SuccinctSet;
 import org.example.succinct.utils.StringEncoder;
 
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
@@ -31,7 +31,6 @@ public class ByteSuccinctSet3 implements SuccinctSet {
         for (int i = 0; i < keys.length; i++) {
             keyBytes[i] = encoder.encodeToBytes(keys[i]);
         }
-
         // 按字节数组字典序排序
         Arrays.parallelSort(keyBytes, (a, b) -> {
             int minLen = Math.min(a.length, b.length);
@@ -57,7 +56,6 @@ public class ByteSuccinctSet3 implements SuccinctSet {
             int L = range.L();
             int R = range.R();
             int index = range.index();
-
             // 检查当前节点是否是叶子节点
             boolean isLeafNode = false;
             int ptr = L;
@@ -66,7 +64,6 @@ public class ByteSuccinctSet3 implements SuccinctSet {
                 ptr++;
             }
             isLeafBuilder.set(nodeId, isLeafNode);
-
             // 处理子节点
             int start = L;
             while (start < R) {
@@ -91,13 +88,11 @@ public class ByteSuccinctSet3 implements SuccinctSet {
                 queue.add(new Range(start, end, index + 1));
                 start = end;
             }
-
             // 设置节点结束标记
             labelBitmapBuilder.set(bitPos, true); // 结束标记
             bitPos++;
             nodeId++;
         }
-
         // 转换并初始化标签数组(byte)
         this.labels = labels.toByteArray();
         this.labelBitmap = labelBitmapBuilder.build(true);

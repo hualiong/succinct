@@ -5,8 +5,9 @@ import java.util.List;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.example.succinct.api.RankSelectBitSet;
 
-public class RankSelectBitSet implements Accountable {
+public class RankSelectBitSet1 implements RankSelectBitSet, Accountable {
     private static final int GAP = 64;
     private final long[] bits;
     private final int[] ranks1;
@@ -14,40 +15,26 @@ public class RankSelectBitSet implements Accountable {
     public final int size;
 
     // 构建器模式
-    public static class Builder {
-        private final List<Long> bits = new ArrayList<>();
-        private int size = 0;
-
-        public void set(int position, boolean value) {
-            ensureCapacity(position);
-            int block = position >> 6;
-            int offset = position & 0x3F;
-            long mask = 1L << offset;
-            if (value) {
-                bits.set(block, bits.get(block) | mask);
-            } else {
-                bits.set(block, bits.get(block) & ~mask);
-            }
+    public static class Builder extends RankSelectBitSet.Builder {
+        public Builder() {
+            super(new ArrayList<>());
         }
 
-        private void ensureCapacity(int position) {
-            int requiredBlocks = (position >> 6) + 1;
-            while (bits.size() < requiredBlocks) {
-                bits.add(0L);
-            }
-            size = Math.max(size, position + 1);
+        public Builder(int size) {
+            super(new ArrayList<>(size + 63 >> 6));
         }
 
+        @Override
         public RankSelectBitSet build(boolean rankSelect) {
             long[] array = new long[bits.size()];
             for (int i = 0; i < bits.size(); i++) {
                 array[i] = bits.get(i);
             }
-            return new RankSelectBitSet(array, size, rankSelect);
+            return new RankSelectBitSet1(array, size, rankSelect);
         }
     }
 
-    private RankSelectBitSet(long[] bits, int size, boolean rankSelect) {
+    private RankSelectBitSet1(long[] bits, int size, boolean rankSelect) {
         this.bits = bits;
         this.size = size;
 
@@ -84,6 +71,17 @@ public class RankSelectBitSet implements Accountable {
         }
     }
 
+    @Override
+    public int size() {
+        return size;
+    }
+
+    @Override
+    public int oneCount() {
+        return ranks1[bits.length];
+    }
+
+    @Override
     public boolean get(int pos) {
         if (pos < 0 || pos >= size) {
             return false;
@@ -93,6 +91,7 @@ public class RankSelectBitSet implements Accountable {
         return (bits[block] & (1L << offset)) != 0;
     }
 
+    @Override
     public int nextSetBit(int from) {
         if (from < 0 || from >= size) {
             return -1;
@@ -108,6 +107,7 @@ public class RankSelectBitSet implements Accountable {
     }
 
     // [0, pos]
+    @Override
     public int rank1(int pos) {
         if (pos < 0 || pos >= size) {
             return 0;
@@ -124,6 +124,7 @@ public class RankSelectBitSet implements Accountable {
     }
 
     // 从1开始
+    @Override
     public int select1(int k) {
         if (k <= 0 || k > ranks1[bits.length]) {
             return -1;
@@ -159,6 +160,7 @@ public class RankSelectBitSet implements Accountable {
     }
 
     // 返回位图在 [0, pos] 中 0 的个数
+    @Override
     public int rank0(int pos) {
         if (pos >= size) {
             pos = size - 1;
@@ -167,6 +169,7 @@ public class RankSelectBitSet implements Accountable {
     }
 
     // 返回位图第 k 个 0 所在的位置，等价于求：rank0(?) = k
+    @Override
     public int select0(int k) {
         if (k <= 0 || k > ranks1[bits.length]) {
             return -1;
