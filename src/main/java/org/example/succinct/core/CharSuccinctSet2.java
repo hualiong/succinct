@@ -1,7 +1,6 @@
 package org.example.succinct.core;
 
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.RamUsageEstimator;
+import org.example.succinct.api.RankSelectBitSet;
 import org.example.succinct.common.Range;
 import org.example.succinct.common.RankSelectBitSet3;
 import org.example.succinct.api.SuccinctSet;
@@ -10,17 +9,15 @@ import it.unimi.dsi.fastutil.chars.CharArrayList;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 import java.util.Queue;
 
 /**
  * 基于 char 数组实现的第二代 Succinct Set
  */
-public class CharSuccinctSet2 implements SuccinctSet, Accountable {
+public class CharSuccinctSet2 implements SuccinctSet {
     protected final char[] labels;
-    protected final RankSelectBitSet3 labelBitmap;
-    protected final RankSelectBitSet3 isLeaf;
+    protected final RankSelectBitSet labelBitmap;
+    protected final RankSelectBitSet isLeaf;
 
     public static CharSuccinctSet2 of(String... keys) {
         return new CharSuccinctSet2(keys, false);
@@ -35,8 +32,8 @@ public class CharSuccinctSet2 implements SuccinctSet, Accountable {
             Arrays.parallelSort(keys);
         }
         CharArrayList labels = new CharArrayList();
-        RankSelectBitSet3.Builder labelBitmapBuilder = new RankSelectBitSet3.Builder();
-        RankSelectBitSet3.Builder isLeafBuilder = new RankSelectBitSet3.Builder();
+        RankSelectBitSet.Builder labelBitmapBuilder = new RankSelectBitSet3.Builder();
+        RankSelectBitSet.Builder isLeafBuilder = new RankSelectBitSet3.Builder();
 
         Queue<Range> queue = new ArrayDeque<>();
         queue.add(new Range(0, keys.length, 0));
@@ -96,7 +93,7 @@ public class CharSuccinctSet2 implements SuccinctSet, Accountable {
         int nodeId = 0, bitmapIndex = 0;
         for (char c : key.toCharArray()) {
             int low = bitmapIndex, mid = -1, high = labelBitmap.select1(nodeId + 1) - 1;
-            if (high >= labelBitmap.size || labelBitmap.get(high)) {
+            if (high >= labelBitmap.size() || labelBitmap.get(high)) {
                 return -1;
             }
             while (low <= high) {
@@ -140,20 +137,8 @@ public class CharSuccinctSet2 implements SuccinctSet, Accountable {
     }
 
     @Override
-    public long ramBytesUsed() {
-        return RamUsageEstimator.sizeOf(labels)
-                + RamUsageEstimator.sizeOf(labelBitmap)
-                + RamUsageEstimator.sizeOf(isLeaf);
-    }
-
-    @Override
-    public Collection<Accountable> getChildResources() {
-        return List.of(labelBitmap, isLeaf);
-    }
-
-    @Override
     public String toString() {
-        return "CharSuccinctSet[" + labels.length + " labels, " + labelBitmap.size + " bits]";
+        return "CharSuccinctSet[" + labels.length + " labels, " + labelBitmap.size() + " bits]";
     }
 
 }

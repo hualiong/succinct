@@ -1,6 +1,7 @@
 package org.example.succinct.core;
 
 import it.unimi.dsi.fastutil.chars.CharArrayList;
+import org.example.succinct.api.RankSelectBitSet;
 import org.example.succinct.common.Range;
 import org.example.succinct.common.RankSelectBitSet3;
 import org.example.succinct.api.SuccinctSet;
@@ -16,8 +17,8 @@ import java.util.Queue;
 public class CharSuccinctSet3 implements SuccinctSet {
     protected final char[] buffer = new char[128];
     protected final char[] labels;
-    protected final RankSelectBitSet3 labelBitmap;
-    protected final RankSelectBitSet3 isLeaf;
+    protected final RankSelectBitSet labelBitmap;
+    protected final RankSelectBitSet isLeaf;
 
     public static CharSuccinctSet3 of(String... keys) {
         return new CharSuccinctSet3(keys, false);
@@ -32,8 +33,8 @@ public class CharSuccinctSet3 implements SuccinctSet {
             Arrays.parallelSort(keys);
         }
         CharArrayList labels = new CharArrayList();
-        RankSelectBitSet3.Builder labelBitmapBuilder = new RankSelectBitSet3.Builder();
-        RankSelectBitSet3.Builder isLeafBuilder = new RankSelectBitSet3.Builder();
+        RankSelectBitSet.Builder labelBitmapBuilder = new RankSelectBitSet3.Builder();
+        RankSelectBitSet.Builder isLeafBuilder = new RankSelectBitSet3.Builder();
 
         Queue<Range> queue = new ArrayDeque<>();
         queue.add(new Range(0, keys.length, 0));
@@ -94,7 +95,7 @@ public class CharSuccinctSet3 implements SuccinctSet {
         int length = StringEncoder.getChars(key, buffer);
         for (int i = 0; i < length; i++) {
             int low = bitmapIndex, mid = -1, high = labelBitmap.select1(nodeId + 1) - 1;
-            if (high >= labelBitmap.size || labelBitmap.get(high)) {
+            if (high >= labelBitmap.size() || labelBitmap.get(high)) {
                 return -1;
             }
             while (low <= high) {
@@ -139,7 +140,7 @@ public class CharSuccinctSet3 implements SuccinctSet {
 
     @Override
     public String toString() {
-        return "CharSuccinctSet[" + labels.length + " labels, " + labelBitmap.size + " bits]";
+        return "CharSuccinctSet[" + labels.length + " labels, " + labelBitmap.size() + " bits]";
     }
 
 }

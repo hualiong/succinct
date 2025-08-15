@@ -1,5 +1,6 @@
 package org.example.succinct.core;
 
+import org.example.succinct.api.RankSelectBitSet;
 import org.example.succinct.common.Range;
 import org.example.succinct.common.RankSelectBitSet3;
 import org.example.succinct.api.SuccinctSet;
@@ -16,8 +17,8 @@ import java.util.*;
  */
 public class ByteSuccinctSet3 implements SuccinctSet {
     protected final byte[] labels;
-    protected final RankSelectBitSet3 labelBitmap;
-    protected final RankSelectBitSet3 isLeaf;
+    protected final RankSelectBitSet labelBitmap;
+    protected final RankSelectBitSet isLeaf;
     protected final StringEncoder encoder;
     
     public static ByteSuccinctSet3 of(String... keys) {
@@ -43,8 +44,8 @@ public class ByteSuccinctSet3 implements SuccinctSet {
         });
 
         ByteArrayList labels = new ByteArrayList();
-        RankSelectBitSet3.Builder labelBitmapBuilder = new RankSelectBitSet3.Builder();
-        RankSelectBitSet3.Builder isLeafBuilder = new RankSelectBitSet3.Builder();
+        RankSelectBitSet.Builder labelBitmapBuilder = new RankSelectBitSet3.Builder();
+        RankSelectBitSet.Builder isLeafBuilder = new RankSelectBitSet3.Builder();
 
         Queue<Range> queue = new ArrayDeque<>();
         queue.add(new Range(0, keys.length, 0)); // 初始字节索引=0
@@ -136,7 +137,7 @@ public class ByteSuccinctSet3 implements SuccinctSet {
         while (buffer.hasRemaining()) {
             byte b = buffer.get();
             int low = bitmapIndex, mid = -1, high = labelBitmap.select1(nodeId + 1) - 1;
-            if (high >= labelBitmap.size || labelBitmap.get(high)) {
+            if (high >= labelBitmap.size() || labelBitmap.get(high)) {
                 return -1;
             }
             while (low <= high) {
@@ -181,6 +182,6 @@ public class ByteSuccinctSet3 implements SuccinctSet {
 
     @Override
     public String toString() {
-        return "ByteSuccinctSet3(" + encoder.charset() + ")[" + labels.length + " labels, " + labelBitmap.size + " bits]";
+        return "ByteSuccinctSet3(" + encoder.charset() + ")[" + labels.length + " labels, " + labelBitmap.size() + " bits]";
     }
 }

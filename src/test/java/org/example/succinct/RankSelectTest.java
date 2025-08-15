@@ -34,7 +34,7 @@ public class RankSelectTest {
         int[] rank0 = new int[] { 1, 2, 2, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 9, 9, 9 };
         int[] select1 = new int[] { 2, 5, 7, 9, 11, 13, 15, 16, 17, 18 };
         int[] select0 = new int[] { 0, 1, 3, 4, 6, 8, 10, 12, 14 };
-        RankSelectBitSet.Builder builder = new RankSelectBitSet1.Builder(seq.length);
+        RankSelectBitSet.Builder builder = new RankSelectBitSet4.Builder(seq.length);
         for (int i = 0; i < seq.length; i++) {
             builder.set(i, seq[i]);
         }

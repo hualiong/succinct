@@ -1,45 +1,30 @@
 package org.example.succinct.common;
 
-import org.apache.lucene.util.Accountable;
-import org.openjdk.jol.info.GraphLayout;
+import org.example.succinct.api.RankSelectBitSet;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.sux4j.util.EliasFanoMonotoneLongBigList;
 
-public class RankSelectBitSet2 implements Accountable {
+public class RankSelectBitSet2 implements RankSelectBitSet {
     private final long[] bits;
     private final EliasFanoMonotoneLongBigList ranks1;
     private final EliasFanoMonotoneLongBigList selects1;
     public final int size;
 
     // 构建器模式
-    public static class Builder {
-        private final LongArrayList bits = new LongArrayList();
-        private int size = 0;
-
-        public void set(int position, boolean value) {
-            ensureCapacity(position);
-            int block = position >> 6;
-            int offset = position & 0x3F;
-            long mask = 1L << offset;
-            if (value) {
-                bits.set(block, bits.getLong(block) | mask);
-            } else {
-                bits.set(block, bits.getLong(block) & ~mask);
-            }
+    public static class Builder extends RankSelectBitSet.Builder {
+        public Builder() {
+            super(new LongArrayList());
         }
 
-        private void ensureCapacity(int position) {
-            int requiredBlocks = (position >> 6) + 1;
-            while (bits.size() < requiredBlocks) {
-                bits.add(0L);
-            }
-            size = Math.max(size, position + 1);
+        public Builder(int size) {
+            super(new LongArrayList(size + 63 >> 6));
         }
 
+        @Override
         public RankSelectBitSet2 build(boolean rankSelect) {
-            return new RankSelectBitSet2(bits, size, rankSelect);
+            return new RankSelectBitSet2((LongArrayList) bits, size, rankSelect);
         }
     }
 
@@ -72,6 +57,17 @@ public class RankSelectBitSet2 implements Accountable {
         }
     }
 
+    @Override
+    public int size() {
+        return size;
+    }
+
+    @Override
+    public long oneCount() {
+        return (int) ranks1.getLong(bits.length);
+    }
+
+    @Override
     public boolean get(int pos) {
         if (pos < 0 || pos >= size) {
             return false;
@@ -81,11 +77,12 @@ public class RankSelectBitSet2 implements Accountable {
         return (bits[block] & (1L << offset)) != 0;
     }
 
-    public int nextSetBit(long from) {
+    @Override
+    public int nextSetBit(int from) {
         if (from < 0 || from >= size) {
             return -1;
         }
-        int u = (int) (from >> 6);
+        int u = from >> 6;
         long word;
         for(word = this.bits[u] & -1L << from; word == 0L; word = this.bits[u]) {
             if (++u == bits.length) {
@@ -96,6 +93,7 @@ public class RankSelectBitSet2 implements Accountable {
     }
 
     // [0, pos]
+    @Override
     public int rank1(int pos) {
         if (pos < 0 || pos >= size) {
             return 0;
@@ -112,11 +110,13 @@ public class RankSelectBitSet2 implements Accountable {
     }
 
     // 从1开始
-    public int select1(long k) {
+    @Override
+    public int select1(int k) {
         return (int) selects1.getLong(k - 1);
     }
 
     // 返回位图在 [0, pos] 中 0 的个数
+    @Override
     public int rank0(int pos) {
         if (pos >= size) {
             pos = size - 1;
@@ -125,6 +125,7 @@ public class RankSelectBitSet2 implements Accountable {
     }
 
     // 返回位图第 k 个 0 所在的位置，等价于求：rank0(?) = k
+    @Override
     public int select0(int k) {
         if (k <= 0 || k > ranks1.getLong(bits.length)) {
             return -1;
@@ -141,10 +142,5 @@ public class RankSelectBitSet2 implements Accountable {
         }
         // 满足rank0(low) >= k的最小位置即第k个0的位置
         return low;
-    }
-
-    @Override
-    public long ramBytesUsed() {
-        return GraphLayout.parseInstance(this).totalSize();
     }
 }

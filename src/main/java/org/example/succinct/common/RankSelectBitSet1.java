@@ -3,11 +3,9 @@ package org.example.succinct.common;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.example.succinct.api.RankSelectBitSet;
 
-public class RankSelectBitSet1 implements RankSelectBitSet, Accountable {
+public class RankSelectBitSet1 implements RankSelectBitSet {
     private static final int GAP = 64;
     private final long[] bits;
     private final int[] ranks1;
@@ -25,7 +23,7 @@ public class RankSelectBitSet1 implements RankSelectBitSet, Accountable {
         }
 
         @Override
-        public RankSelectBitSet build(boolean rankSelect) {
+        public RankSelectBitSet1 build(boolean rankSelect) {
             long[] array = new long[bits.size()];
             for (int i = 0; i < bits.size(); i++) {
                 array[i] = bits.get(i);
@@ -77,7 +75,7 @@ public class RankSelectBitSet1 implements RankSelectBitSet, Accountable {
     }
 
     @Override
-    public int oneCount() {
+    public long oneCount() {
         return ranks1[bits.length];
     }
 
@@ -186,13 +184,5 @@ public class RankSelectBitSet1 implements RankSelectBitSet, Accountable {
         }
         // 满足rank0(low) >= k的最小位置即第k个0的位置
         return low;
-    }
-
-    @Override
-    public long ramBytesUsed() {
-        return RamUsageEstimator.sizeOf(bits)
-                + RamUsageEstimator.sizeOf(ranks1)
-                + RamUsageEstimator.sizeOf(selects1)
-                + RamUsageEstimator.sizeOf(size);
     }
 }

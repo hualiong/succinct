@@ -4,50 +4,27 @@ import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.sux4j.bits.RankSelect;
 import it.unimi.dsi.sux4j.bits.SparseSelect;
-import org.apache.lucene.util.Accountable;
-import org.openjdk.jol.info.GraphLayout;
+import org.example.succinct.api.RankSelectBitSet;
 
-public class RankSelectBitSet3 implements Accountable {
+public class RankSelectBitSet3 implements RankSelectBitSet {
     private final LongArrayBitVector bits;
     private final RankSelect rankSelect;
     public final long oneCount;
     public final int size;
 
     // 构建器模式
-    public static class Builder {
-        private final LongArrayList bits;
-        private int size = 0;
-
+    public static class Builder extends RankSelectBitSet.Builder {
         public Builder() {
-            bits = new LongArrayList();
+            super(new LongArrayList());
         }
 
         public Builder(int size) {
-            bits = new LongArrayList(size + 63 >> 6);
+            super(new LongArrayList(size + 63 >> 6));
         }
 
-        public void set(int position, boolean value) {
-            ensureCapacity(position);
-            int block = position >> 6;
-            int offset = position & 0x3F;
-            long mask = 1L << offset;
-            if (value) {
-                bits.set(block, bits.getLong(block) | mask);
-            } else {
-                bits.set(block, bits.getLong(block) & ~mask);
-            }
-        }
-
-        private void ensureCapacity(int position) {
-            int requiredBlocks = (position >> 6) + 1;
-            while (bits.size() < requiredBlocks) {
-                bits.add(0L);
-            }
-            size = Math.max(size, position + 1);
-        }
-
+        @Override
         public RankSelectBitSet3 build(boolean rankSelect) {
-            return new RankSelectBitSet3(bits, size, rankSelect);
+            return new RankSelectBitSet3((LongArrayList) bits, size, rankSelect);
         }
     }
 
@@ -65,35 +42,51 @@ public class RankSelectBitSet3 implements Accountable {
         }
     }
 
+    @Override
+    public int size() {
+        return size;
+    }
+
+    @Override
+    public long oneCount() {
+        return oneCount;
+    }
+
+    @Override
     public boolean get(int pos) {
         check(pos, 0, size - 1);
         return bits.getBoolean(pos);
     }
 
-    public int nextSetBit(long from) {
+    @Override
+    public int nextSetBit(int from) {
         // check(from, 0, size - 1);
         return (int) bits.nextOne(from);
     }
 
     // [0, pos]
+    @Override
     public int rank1(int pos) {
         check(pos, 0, size - 1);
         return (int) rankSelect.rank(pos + 1);
     }
 
     // 从1开始
+    @Override
     public int select1(int k) {
         check(k, 1, oneCount);
         return (int) rankSelect.select(k - 1);
     }
 
     // 返回位图在 [0, pos] 中 0 的个数
+    @Override
     public int rank0(int pos) {
         check(pos, 0, size - 1);
         return pos + 1 - rank1(pos);
     }
 
     // 返回位图第 k 个 0 所在的位置，等价于求：rank0(?) = k
+    @Override
     public int select0(int k) {
         check(k, 1, size - oneCount);
         int low = 0, high = size - 1;
@@ -114,10 +107,5 @@ public class RankSelectBitSet3 implements Accountable {
         if (n < min || n > max) {
             throw new IndexOutOfBoundsException("Index (" + n + ") is not in valid range [" + min + ", " + max + "]");
         }
-    }
-
-    @Override
-    public long ramBytesUsed() {
-        return GraphLayout.parseInstance(this).totalSize();
     }
 }

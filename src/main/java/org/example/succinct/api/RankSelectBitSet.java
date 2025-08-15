@@ -6,7 +6,7 @@ public interface RankSelectBitSet {
 
     int size();
 
-    int oneCount();
+    long oneCount();
 
     boolean get(int pos);
 
