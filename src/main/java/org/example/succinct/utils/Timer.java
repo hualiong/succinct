@@ -1,4 +1,4 @@
-package org.example.succinct.test;
+package org.example.succinct.utils;
 
 @SuppressWarnings("unused")
 public class Timer {

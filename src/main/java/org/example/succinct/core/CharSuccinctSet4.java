@@ -1,35 +1,40 @@
 package org.example.succinct.core;
 
+import it.unimi.dsi.fastutil.chars.CharArrayList;
 import org.example.succinct.api.RankSelectBitSet;
 import org.example.succinct.common.Range;
-import org.example.succinct.common.RankSelectBitSet1;
+import org.example.succinct.common.RankSelectBitSet4;
 import org.example.succinct.api.SuccinctSet;
+import org.example.succinct.utils.StringEncoder;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Queue;
 
 /**
- * 基于 char 数组实现的第一代 Succinct Set
+ * 基于 char 数组实现的第三代 Succinct Set
  */
-public class CharSuccinctSet extends SuccinctSet {
+public class CharSuccinctSet4 extends SuccinctSet {
+    private final char[] buffer = new char[128];
     private final char[] labels;
     private final RankSelectBitSet labelBitmap;
     private final RankSelectBitSet isLeaf;
 
-    public static CharSuccinctSet of(String... keys) {
-        return new CharSuccinctSet(keys, false);
+    public static CharSuccinctSet4 of(String... keys) {
+        return new CharSuccinctSet4(keys, false);
     }
 
-    public static CharSuccinctSet sortedOf(String... keys) {
-        return new CharSuccinctSet(keys, true);
+    public static CharSuccinctSet4 sortedOf(String... keys) {
+        return new CharSuccinctSet4(keys, true);
     }
 
-    public CharSuccinctSet(String[] keys, boolean sorted) {
+    public CharSuccinctSet4(String[] keys, boolean sorted) {
         if (!sorted) {
             Arrays.parallelSort(keys);
         }
-        List<Character> labelsList = new ArrayList<>();
-        RankSelectBitSet.Builder labelBitmapBuilder = new RankSelectBitSet1.Builder();
-        RankSelectBitSet.Builder isLeafBuilder = new RankSelectBitSet1.Builder();
+        CharArrayList labels = new CharArrayList();
+        RankSelectBitSet.Builder labelBitmapBuilder = new RankSelectBitSet4.Builder();
+        RankSelectBitSet.Builder isLeafBuilder = new RankSelectBitSet4.Builder();
 
         Queue<Range> queue = new ArrayDeque<>();
         queue.add(new Range(0, keys.length, 0));
@@ -66,7 +71,7 @@ public class CharSuccinctSet extends SuccinctSet {
                     end++;
                 }
                 // 添加子节点标签
-                labelsList.add(currentChar);
+                labels.add(currentChar);
                 // 设置子节点标记(0)
                 labelBitmapBuilder.set(bitPos, false);
                 bitPos++;
@@ -80,33 +85,43 @@ public class CharSuccinctSet extends SuccinctSet {
             nodeId++;
         }
         // 转换并初始化位图
-        this.labels = new char[labelsList.size()];
-        for (int i = 0; i < labelsList.size(); i++) {
-            labels[i] = labelsList.get(i);
-        }
+        this.labels = labels.toCharArray();
         this.labelBitmap = labelBitmapBuilder.build(true);
         this.isLeaf = isLeafBuilder.build(false);
     }
 
+    @Override
+    public int index(String key) {
+        int nodeId = extract(key);
+        return nodeId >= 0 && isLeaf.get(nodeId) ? nodeId : -1;
+    }
+
     private int extract(String key) {
-        int nodeId = 0, bitmapIndex = -1;
-        for (char c : key.toCharArray()) {
-            // 移动到下一个节点
-            nodeId = bitmapIndex + 1 - nodeId;
-            bitmapIndex = labelBitmap.select1(nodeId) + 1;
-            while (true) {
-                if (bitmapIndex >= labelBitmap.size() || labelBitmap.get(bitmapIndex)) {
-                    return -1;
-                }
-                // 计算标签索引
-                int labelIndex = bitmapIndex - nodeId;
-                if (labelIndex < labels.length && labels[labelIndex] == c) {
-                    break;
-                }
-                bitmapIndex++;
+        int nodeId = 0, bitmapIndex = 0;
+        int length = StringEncoder.getChars(key, buffer);
+        for (int i = 0; i < length; i++) {
+            int low = bitmapIndex, mid = -1, high = labelBitmap.select1(nodeId + 1) - 1;
+            if (high >= labelBitmap.size() || labelBitmap.get(high)) {
+                return -1;
             }
+            while (low <= high) {
+                mid = low + high >>> 1;
+                char label = labels[mid - nodeId];
+                if (label == buffer[i]) {
+                    break;
+                } else if (label < buffer[i]) {
+                    low = mid + 1;
+                } else {
+                    high = mid - 1;
+                }
+            }
+            if (low > high) {
+                return -1;
+            }
+            nodeId = mid + 1 - nodeId;
+            bitmapIndex = labelBitmap.select1(nodeId) + 1;
         }
-        return bitmapIndex;
+        return nodeId;
     }
 
     @Override
@@ -125,11 +140,8 @@ public class CharSuccinctSet extends SuccinctSet {
 
     @Override
     public boolean contains(String key) {
-        int bitmapIndex = extract(key);
-        if (bitmapIndex < 0) {
-            return false;
-        }
-        return isLeaf.get(labelBitmap.rank0(bitmapIndex));
+        int nodeId = extract(key);
+        return nodeId >= 0 && isLeaf.get(nodeId);
     }
 
     @Override

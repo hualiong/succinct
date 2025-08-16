@@ -11,7 +11,6 @@ import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.example.succinct.common.SimpleFSA;
 import org.example.succinct.common.SimpleFST;
-import org.example.succinct.test.Recorder;
 import org.example.succinct.utils.StringGenerateUtil;
 import org.junit.Test;
 
@@ -21,7 +20,7 @@ import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 public class FSTTests {
     @Test
     public void FSAMemoryTest() {
-        String[] array = StringGenerateUtil.readArray("C:\\Users\\huazhaoming\\Desktop\\data\\100w_en.txt");
+        String[] array = StringGenerateUtil.randomArray(1000000, 5, 0.7f);
         // System.out.println(sizeOf(array));
         SimpleFSA fsa = new SimpleFSA(array);
         System.out.println(sizeOf(fsa));
@@ -30,7 +29,7 @@ public class FSTTests {
 
     @Test
     public void FSTMemoryTest() {
-        String[] array = StringGenerateUtil.readArray("C:\\Users\\huazhaoming\\Desktop\\data\\100w_cn_kv.txt");
+        String[] array = StringGenerateUtil.randomArray(1000000, 5, 0.7f);
         // System.out.println(sizeOf(array));
         Map<BytesRef, Long> map = new LinkedHashMap<>();
         for (String line : array) {
@@ -42,24 +41,6 @@ public class FSTTests {
         SimpleFST<Long> fst = new SimpleFST<>(map, PositiveIntOutputs.getSingleton());
         System.out.println(sizeOf(fst));
         System.out.println(estimateSizeOf(fst));
-    }
-
-    @Test
-    public void FSTQueryTest() {
-        String[] array = StringGenerateUtil.readArray("C:\\Users\\huazhaoming\\Desktop\\data\\100w_cn_kv.txt");
-        Recorder t = new Recorder();
-        Map<BytesRef, Long> map = new LinkedHashMap<>();
-        for (String line : array) {
-            String[] parts = line.split(" ");
-            if (parts.length == 2) {
-                map.put(new BytesRef(parts[0]), Long.parseLong(parts[1]));
-            }
-        }
-        SimpleFST<Long> fst = new SimpleFST<>(map, PositiveIntOutputs.getSingleton());
-        t.once(map, m -> {
-            m.keySet().forEach(fst::get);
-        });
-        System.out.println(t.sum() + "ms | " + estimateSizeOf(fst));
     }
 
     @Test

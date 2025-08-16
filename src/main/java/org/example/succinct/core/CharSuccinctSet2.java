@@ -14,10 +14,10 @@ import java.util.Queue;
 /**
  * 基于 char 数组实现的第二代 Succinct Set
  */
-public class CharSuccinctSet2 implements SuccinctSet {
-    protected final char[] labels;
-    protected final RankSelectBitSet labelBitmap;
-    protected final RankSelectBitSet isLeaf;
+public class CharSuccinctSet2 extends SuccinctSet {
+    private final char[] labels;
+    private final RankSelectBitSet labelBitmap;
+    private final RankSelectBitSet isLeaf;
 
     public static CharSuccinctSet2 of(String... keys) {
         return new CharSuccinctSet2(keys, false);
@@ -89,7 +89,13 @@ public class CharSuccinctSet2 implements SuccinctSet {
         this.isLeaf = isLeafBuilder.build(false);
     }
 
-    private int getNodeIdByKey(String key) {
+    @Override
+    public int index(String key) {
+        int nodeId = extract(key);
+        return nodeId >= 0 && isLeaf.get(nodeId) ? nodeId : -1;
+    }
+
+    private int extract(String key) {
         int nodeId = 0, bitmapIndex = 0;
         for (char c : key.toCharArray()) {
             int low = bitmapIndex, mid = -1, high = labelBitmap.select1(nodeId + 1) - 1;
@@ -132,7 +138,7 @@ public class CharSuccinctSet2 implements SuccinctSet {
 
     @Override
     public boolean contains(String key) {
-        int nodeId = getNodeIdByKey(key);
+        int nodeId = extract(key);
         return nodeId >= 0 && isLeaf.get(nodeId);
     }
 

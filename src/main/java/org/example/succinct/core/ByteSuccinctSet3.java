@@ -15,11 +15,11 @@ import java.util.*;
 /**
  * 基于 byte 数组实现的第三代 Succinct Set
  */
-public class ByteSuccinctSet3 implements SuccinctSet {
-    protected final byte[] labels;
-    protected final RankSelectBitSet labelBitmap;
-    protected final RankSelectBitSet isLeaf;
-    protected final StringEncoder encoder;
+public class ByteSuccinctSet3 extends SuccinctSet {
+    private final byte[] labels;
+    private final RankSelectBitSet labelBitmap;
+    private final RankSelectBitSet isLeaf;
+    private final StringEncoder encoder;
     
     public static ByteSuccinctSet3 of(String... keys) {
         return new ByteSuccinctSet3(keys, "GB18030");
@@ -100,14 +100,15 @@ public class ByteSuccinctSet3 implements SuccinctSet {
         this.isLeaf = isLeafBuilder.build(false);
     }
 
-    public int extract(String key) {
-        int nodeId = getNodeIdByKey(key);
+    @Override
+    public int index(String key) {
+        int nodeId = extract(key);
         return nodeId >= 0 && isLeaf.get(nodeId) ? nodeId : -1;
     }
 
     @Override
     public boolean contains(String key) {
-        int nodeId = getNodeIdByKey(key);
+        int nodeId = extract(key);
         return nodeId >= 0 && isLeaf.get(nodeId);
     }
 
@@ -130,7 +131,7 @@ public class ByteSuccinctSet3 implements SuccinctSet {
         return null;
     }
 
-    private int getNodeIdByKey(String key) {
+    private int extract(String key) {
         ByteBuffer buffer = encoder.encodeToBuffer(key);
         int nodeId = 0, bitmapIndex = 0;
         buffer.rewind();

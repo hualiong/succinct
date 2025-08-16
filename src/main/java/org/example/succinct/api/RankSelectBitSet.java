@@ -20,9 +20,15 @@ public interface RankSelectBitSet {
 
     int select0(int k);
 
-     abstract class Builder {
+    default boolean isInvalid(long n, long min, long max) {
+        assert min <= n && n <= max : "Index (" + n + ") is not in valid range [" + min + ", " + max + "]";
+        return n < min || n > max;
+    }
+
+    abstract class Builder {
         protected final List<Long> bits;
         protected int size = 0;
+        protected int count = 0;
 
         protected Builder(List<Long> bits) {
             this.bits = bits;
@@ -33,10 +39,15 @@ public interface RankSelectBitSet {
             int block = position >> 6;
             int offset = position & 0x3F;
             long mask = 1L << offset;
+            long oldBlock = bits.get(block);
             if (value) {
-                bits.set(block, bits.get(block) | mask);
+                bits.set(block, oldBlock | mask); // 设置位为1
             } else {
-                bits.set(block, bits.get(block) & ~mask);
+                bits.set(block, oldBlock & ~mask); // 设置位为0
+            }
+            // 仅当位的值实际发生变化时更新计数器
+            if ((oldBlock & mask) != 0 != value) {
+                count += value ? 1 : 0;
             }
         }
 

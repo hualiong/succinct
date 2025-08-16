@@ -54,7 +54,9 @@ public class RankSelectBitSet3 implements RankSelectBitSet {
 
     @Override
     public boolean get(int pos) {
-        check(pos, 0, size - 1);
+        if (isInvalid(pos, 0, size - 1)) {
+            return false;
+        }
         return bits.getBoolean(pos);
     }
 
@@ -67,28 +69,36 @@ public class RankSelectBitSet3 implements RankSelectBitSet {
     // [0, pos]
     @Override
     public int rank1(int pos) {
-        check(pos, 0, size - 1);
+        if (isInvalid(pos, 0, size - 1)) {
+            return -1;
+        }
         return (int) rankSelect.rank(pos + 1);
     }
 
     // 从1开始
     @Override
     public int select1(int k) {
-        check(k, 1, oneCount);
+        if (isInvalid(k, 1, oneCount)) {
+            return -1;
+        }
         return (int) rankSelect.select(k - 1);
     }
 
     // 返回位图在 [0, pos] 中 0 的个数
     @Override
     public int rank0(int pos) {
-        check(pos, 0, size - 1);
+        if (isInvalid(pos, 0, size - 1)) {
+            return -1;
+        }
         return pos + 1 - rank1(pos);
     }
 
     // 返回位图第 k 个 0 所在的位置，等价于求：rank0(?) = k
     @Override
     public int select0(int k) {
-        check(k, 1, size - oneCount);
+        if (k == 0 || isInvalid(k, 1, size - oneCount)) {
+            return -1;
+        }
         int low = 0, high = size - 1;
         while (low <= high) {
             int mid = (low + high) >>> 1;
@@ -101,11 +111,5 @@ public class RankSelectBitSet3 implements RankSelectBitSet {
         }
         // 满足rank0(low) >= k的最小位置即第k个0的位置
         return low;
-    }
-
-    private static void check(long n, long min, long max) {
-        if (n < min || n > max) {
-            throw new IndexOutOfBoundsException("Index (" + n + ") is not in valid range [" + min + ", " + max + "]");
-        }
     }
 }

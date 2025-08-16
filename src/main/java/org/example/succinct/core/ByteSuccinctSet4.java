@@ -2,35 +2,36 @@ package org.example.succinct.core;
 
 import org.example.succinct.api.RankSelectBitSet;
 import org.example.succinct.common.Range;
-import org.example.succinct.common.RankSelectBitSet3;
-import org.example.succinct.api.SuccinctSet;
+import org.example.succinct.common.RankSelectBitSet4;
+import org.example.succinct.api.SuccinctSet2;
+import org.example.succinct.utils.StringEncoder;
 
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.*;
 
 /**
- * 基于 byte 数组实现的第二代 Succinct Set
+ * 基于 byte 数组实现的第四代 Succinct Set，0标识子节点，1标识结束
  */
-public class ByteSuccinctSet2 extends SuccinctSet {
-    private final Charset charset;
-    private final byte[] labels;
+public class ByteSuccinctSet4 extends SuccinctSet2 {
     private final RankSelectBitSet labelBitmap;
-    private final RankSelectBitSet isLeaf;
+    private final RankSelectBitSet isLeaf; // 标识第i个节点的链路是个单独的term
+    private final StringEncoder encoder;
+    private byte[] buffer = new byte[1024];
 
-    public static ByteSuccinctSet2 of(String... keys) {
-        return new ByteSuccinctSet2(keys, "GB18030");
+    public static ByteSuccinctSet4 of(String... keys) {
+        return ByteSuccinctSet4.of(keys, "GB18030");
     }
-
-    public ByteSuccinctSet2(String[] keys, String charset) {
+    
+    public static ByteSuccinctSet4 of(String[] keys, String charset) {
         // 转换为字节数组并排序
-        this.charset = Charset.forName(charset);
+        StringEncoder encoder = new StringEncoder(Charset.forName(charset));
         byte[][] keyBytes = new byte[keys.length][];
         for (int i = 0; i < keys.length; i++) {
-            keyBytes[i] = keys[i].getBytes(this.charset);
+            keyBytes[i] = encoder.encodeToBytes(keys[i]);
         }
-
         // 按字节数组字典序排序
         Arrays.parallelSort(keyBytes, (a, b) -> {
             int minLen = Math.min(a.length, b.length);
@@ -41,23 +42,17 @@ public class ByteSuccinctSet2 extends SuccinctSet {
             }
             return a.length - b.length;
         });
-
         ByteArrayList labels = new ByteArrayList();
-        RankSelectBitSet.Builder labelBitmapBuilder = new RankSelectBitSet3.Builder();
-        RankSelectBitSet.Builder isLeafBuilder = new RankSelectBitSet3.Builder();
+        RankSelectBitSet.Builder labelBitmapBuilder = new RankSelectBitSet4.Builder();
+        RankSelectBitSet.Builder isLeafBuilder = new RankSelectBitSet4.Builder();
 
         Queue<Range> queue = new ArrayDeque<>();
-        queue.add(new Range(0, keys.length, 0)); // 初始字节索引=0
-        int bitPos = 0;
-        int nodeId = 0;
+        queue.add(new Range(0, keys.length, 0));
+        int bitPos = 0, nodeId = 0;
 
         while (!queue.isEmpty()) {
             Range range = queue.poll();
-            int L = range.L();
-            int R = range.R();
-            int index = range.index();
-
-            // 检查当前节点是否是叶子节点
+            int L = range.L(), R = range.R(), index = range.index();
             boolean isLeafNode = false;
             int ptr = L;
             while (ptr < R && keyBytes[ptr].length == index) {
@@ -65,7 +60,6 @@ public class ByteSuccinctSet2 extends SuccinctSet {
                 ptr++;
             }
             isLeafBuilder.set(nodeId, isLeafNode);
-
             // 处理子节点
             int start = L;
             while (start < R) {
@@ -84,23 +78,33 @@ public class ByteSuccinctSet2 extends SuccinctSet {
                 }
                 // 添加子节点标签(byte)
                 labels.add(currentByte);
-                labelBitmapBuilder.set(bitPos, false); // 子节点标记
-                bitPos++;
+                labelBitmapBuilder.set(bitPos++, false); // 子节点标记
                 // 将子节点范围加入队列(字节索引+1)
                 queue.add(new Range(start, end, index + 1));
                 start = end;
             }
-
             // 设置节点结束标记
-            labelBitmapBuilder.set(bitPos, true); // 结束标记
-            bitPos++;
+            labelBitmapBuilder.set(bitPos++, true); // 结束标记
             nodeId++;
         }
+        return new ByteSuccinctSet4(
+            labels.toByteArray(),
+            labelBitmapBuilder.build(true),
+            isLeafBuilder.build(false),
+            encoder
+        );
+    }
 
-        // 转换并初始化标签数组(byte)
-        this.labels = labels.toByteArray();
-        this.labelBitmap = labelBitmapBuilder.build(true);
-        this.isLeaf = isLeafBuilder.build(false);
+    public ByteSuccinctSet4(byte[] labels, RankSelectBitSet labelBitmap, RankSelectBitSet isLeaf,
+            StringEncoder encoder) {
+        super(labels, isLeaf.oneCount());
+        this.labelBitmap = labelBitmap;
+        this.isLeaf = isLeaf;
+        this.encoder = encoder;
+    }
+
+    public RankSelectBitSet labelBitmap() {
+        return labelBitmap;
     }
 
     @Override
@@ -118,38 +122,22 @@ public class ByteSuccinctSet2 extends SuccinctSet {
     @Override
     public String get(int nodeId) {
         if (isLeaf.get(nodeId)) {
-            int id = nodeId;
-            Deque<Byte> str = new LinkedList<>();
-            int bitmapIndex;
+            int id = nodeId, length = 0, bitmapIndex;
             while ((bitmapIndex = labelBitmap.select0(id)) >= 0) {
                 id = labelBitmap.rank1(bitmapIndex);
-                str.push(labels[bitmapIndex - id]);
+                buffer[buffer.length - ++length] = labels[bitmapIndex - id];
             }
-            byte[] bytes = new byte[str.size()];
-            for (int i = 0; i < bytes.length; i++) {
-                bytes[i] = str.pop();
-            }
-            return new String(bytes, charset);
+            return new String(buffer, buffer.length - length, length, encoder.charset());
         }
         return null;
     }
 
     private int extract(String key) {
-        byte[] bytes = key.getBytes(charset);
+        ByteBuffer buffer = encoder.encodeToBuffer(key);
         int nodeId = 0, bitmapIndex = 0;
-        for (byte b : bytes) {
-            // while (true) {
-            // if (bitmapIndex >= labelBitmap.size( || labelBitmap.get(bitmapIndex)) {
-            // return -1;
-            // }
-            // int labelIndex = bitmapIndex - nodeId;
-            // if (labelIndex < labels.length && labels[labelIndex] == b) {
-            // break;
-            // }
-            // bitmapIndex++;
-            // }
-            // nodeId = bitmapIndex + 1 - nodeId;
-            // bitmapIndex = labelBitmap.select1(nodeId) + 1;
+        buffer.rewind();
+        while (buffer.hasRemaining()) {
+            byte b = buffer.get();
             int low = bitmapIndex, mid = -1, high = labelBitmap.select1(nodeId + 1) - 1;
             if (high >= labelBitmap.size() || labelBitmap.get(high)) {
                 return -1;
@@ -196,7 +184,7 @@ public class ByteSuccinctSet2 extends SuccinctSet {
 
     @Override
     public String toString() {
-        return "ByteSuccinctSet2(" + charset + ")[" + labels.length + " labels, " + labelBitmap.size() + " bits]";
+        return String.format("ByteSuccinctSet4(%s)[%d labels, %d bits]", encoder.charset(), labels.length,
+                labelBitmap.size());
     }
-
 }

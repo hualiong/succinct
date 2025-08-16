@@ -1,4 +1,4 @@
-package org.example.succinct.test;
+package org.example.succinct.utils;
 
 import java.util.function.Consumer;
 import java.util.function.Function;

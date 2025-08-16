@@ -14,11 +14,11 @@ import java.util.Queue;
 /**
  * 基于 char 数组实现的第三代 Succinct Set
  */
-public class CharSuccinctSet3 implements SuccinctSet {
-    protected final char[] buffer = new char[128];
-    protected final char[] labels;
-    protected final RankSelectBitSet labelBitmap;
-    protected final RankSelectBitSet isLeaf;
+public class CharSuccinctSet3 extends SuccinctSet {
+    private final char[] buffer = new char[128];
+    private final char[] labels;
+    private final RankSelectBitSet labelBitmap;
+    private final RankSelectBitSet isLeaf;
 
     public static CharSuccinctSet3 of(String... keys) {
         return new CharSuccinctSet3(keys, false);
@@ -90,7 +90,13 @@ public class CharSuccinctSet3 implements SuccinctSet {
         this.isLeaf = isLeafBuilder.build(false);
     }
 
-    private int getNodeIdByKey(String key) {
+    @Override
+    public int index(String key) {
+        int nodeId = extract(key);
+        return nodeId >= 0 && isLeaf.get(nodeId) ? nodeId : -1;
+    }
+
+    private int extract(String key) {
         int nodeId = 0, bitmapIndex = 0;
         int length = StringEncoder.getChars(key, buffer);
         for (int i = 0; i < length; i++) {
@@ -134,7 +140,7 @@ public class CharSuccinctSet3 implements SuccinctSet {
 
     @Override
     public boolean contains(String key) {
-        int nodeId = getNodeIdByKey(key);
+        int nodeId = extract(key);
         return nodeId >= 0 && isLeaf.get(nodeId);
     }
 

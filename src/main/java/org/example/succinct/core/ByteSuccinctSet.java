@@ -11,11 +11,11 @@ import java.util.*;
 /**
  * 基于 byte 数组实现的第一代 Succinct Set
  */
-public class ByteSuccinctSet implements SuccinctSet {
-    protected final Charset charset;
-    protected final byte[] labels;
-    protected final RankSelectBitSet labelBitmap;
-    protected final RankSelectBitSet isLeaf;
+public class ByteSuccinctSet extends SuccinctSet {
+    private final Charset charset;
+    private final byte[] labels;
+    private final RankSelectBitSet labelBitmap;
+    private final RankSelectBitSet isLeaf;
 
     public static ByteSuccinctSet of(String... keys) {
         return new ByteSuccinctSet(keys, "GB18030");
@@ -106,14 +106,15 @@ public class ByteSuccinctSet implements SuccinctSet {
         this.isLeaf = isLeafBuilder.build(false);
     }
 
-    public int extract(String key) {
-        int nodeId = getNodeIdByKey(key);
+    @Override
+    public int index(String key) {
+        int nodeId = extract(key);
         return isLeaf.get(nodeId) ? nodeId : -1;
     }
 
     @Override
     public boolean contains(String key) {
-        return isLeaf.get(getNodeIdByKey(key));
+        return isLeaf.get(extract(key));
     }
 
     @Override
@@ -134,7 +135,7 @@ public class ByteSuccinctSet implements SuccinctSet {
         return null;
     }
 
-    private int getNodeIdByKey(String key) {
+    private int extract(String key) {
         byte[] bytes = key.getBytes(charset);
         int nodeId = 0, bitmapIndex = 0;
         for (byte b : bytes) {
