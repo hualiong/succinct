@@ -14,6 +14,7 @@ import java.util.*;
 
 /**
  * 基于 byte 数组实现的第四代 Succinct Set，0标识子节点，1标识结束
+ * Note: 从前缀树上看，当前标签位于弧上，归属上个节点，断言
  */
 public class ByteSuccinctSet4 extends SuccinctSet2 {
     private final RankSelectBitSet labelBitmap;
@@ -134,6 +135,57 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
             return new String(buffer, buffer.length - length, length, encoder.charset());
         }
         return null;
+    }
+
+    @Override
+    public Iterator<String> prefixesOf(String key) {
+        return new Iterator<>() {
+            private final byte[] bytes = encoder.encodeToBytes(key);
+            private int pos = 0;
+            private int nodeId = 0;
+            private int bitmapIndex = 0;
+            private boolean flag;
+
+            @Override
+            public boolean hasNext() {
+                return flag;
+            }
+
+            @Override
+            public String next() {
+                for (int i = pos; i < bytes.length; i++) {
+                    byte b = bytes[i];
+                    int low = bitmapIndex, mid = -1, high = labelBitmap.select1(nodeId + 1) - 1;
+                    if (high >= labelBitmap.size() || labelBitmap.get(high)) {
+                        flag = false;
+                        return null;
+                    }
+                    while (low <= high) {
+                        mid = low + high >>> 1;
+                        byte label = labels[mid - nodeId];
+                        if (label == b) {
+                            break;
+                        } else if (label < b) {
+                            low = mid + 1;
+                        } else {
+                            high = mid - 1;
+                        }
+                    }
+                    if (low > high) {
+                        flag = false;
+                        return null;
+                    }
+                    nodeId = mid + 1 - nodeId;
+                    bitmapIndex = labelBitmap.select1(nodeId) + 1;
+                    if (isLeaf.get(nodeId)) {
+                        pos = i + 1;
+                        return new String(bytes, 0, pos, encoder.charset());
+                    }
+                }
+                flag = false;
+                return null;
+            }
+        };
     }
 
     private int extract(String key) {

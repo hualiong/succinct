@@ -1,5 +1,6 @@
 package org.example;
 
+import org.example.succinct.api.SuccinctSet2;
 import org.example.succinct.core.*;
 import org.example.succinct.common.*;
 import org.example.succinct.api.RankSelectBitSet;
@@ -12,6 +13,7 @@ import org.example.succinct.utils.Timer;
 import java.nio.charset.Charset;
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Queue;
 import java.util.Set;
 
@@ -20,8 +22,12 @@ import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 @SuppressWarnings("unused")
 public class Main {
     public static void main(String[] args) {
-        containsTimeTest(62);
-        // bitSetTest();
+        SuccinctSet2 set = ByteSuccinctSet4.of("he", "hello", "helloworld");
+        Iterator<String> prefixes = set.prefixesOf("helloworlds"); // prefixKeysOf
+        String s;
+        while ((s = prefixes.next()) != null) {
+            System.out.println(s);
+        }
     }
 
     public static void containsTimeTest(int flag) {

@@ -1,5 +1,7 @@
 package org.example.succinct.api;
 
+import java.util.Iterator;
+
 public abstract class SuccinctSet2 extends SuccinctSet {
     protected final byte[] labels;
     public final long size;
@@ -9,7 +11,9 @@ public abstract class SuccinctSet2 extends SuccinctSet {
         this.size = size;
     }
 
-    public abstract Iterable<String> prefixesOf(String key);
+    public abstract Iterator<String> prefixesOf(String key);
 
-    public abstract Iterable<String> startsWith(String key);
+    public Iterator<String> startsWith(String key) {
+        throw new UnsupportedOperationException();
+    }
 }
