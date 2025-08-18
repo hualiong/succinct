@@ -28,9 +28,8 @@ public class RankSelectTimeTest {
     }
 
     public static void allTest() {
-        String[] keys = StringGenerateUtil.randomArray(1000000, 5, 1.0f);
-        RankSelectBitSet.Builder builder = new RankSelectBitSet4.Builder();
-        RankSelectBitSet bitSet = createLoudsBits(builder, keys);
+        String[] keys = StringGenerateUtil.randomArray(1000000, 32, 0.0f);
+        RankSelectBitSet bitSet = createLoudsBitSet(new RankSelectBitSet3.Builder(), keys);
         System.out.printf("memory: %s\n", sizeOf(bitSet));
         long t = Timer.now();
         for (int i = 0; i < bitSet.size(); i++) {
@@ -94,11 +93,9 @@ public class RankSelectTimeTest {
     }
 
     public static void selectTest() {
-        int size = 10000000;
-        BitVector bits = LongArrayBitVector.getInstance(size);
-        for (int i = 0; i < size; i++) {
-            bits.add(Math.random() < 0.5);
-        }
+        String[] keys = StringGenerateUtil.randomArray(1000000, 32, 0.0f);
+        RankSelectBitSet4.Builder builder = createLoudsBits(new RankSelectBitSet4.Builder(), keys);
+        BitVector bits = builder.bitVector();
         Rank9 rank9 = new Rank9(bits);
         Select simpleSelect = new SimpleSelect(bits);
         Select select9 = new Select9(rank9);
@@ -128,7 +125,42 @@ public class RankSelectTimeTest {
         System.out.printf("sparseSelect: %d ms | %s\n", Timer.ms(t3, t4), sizeOf(sparseSelect));
     }
 
-    private static RankSelectBitSet createLoudsBits(RankSelectBitSet.Builder builder, String[] keys) {
+    private static RankSelectBitSet4.Builder createLoudsBits(RankSelectBitSet4.Builder builder, String[] keys) {
+        Arrays.parallelSort(keys);
+        Queue<Range> queue = new ArrayDeque<>();
+        queue.add(new Range(0, keys.length, 0));
+        int bitPos = 0;
+        while (!queue.isEmpty()) {
+            Range range = queue.poll();
+            int L = range.L(), R = range.R(), index = range.index();
+            int ptr = L;
+            while (ptr < R && keys[ptr].length() == index) {
+                ptr++;
+            }
+            int start = L;
+            while (start < R) {
+                if (keys[start].length() <= index) {
+                    start++;
+                    continue;
+                }
+                char currentChar = keys[start].charAt(index);
+                int end = start + 1;
+                while (end < R) {
+                    if (keys[end].length() <= index || keys[end].charAt(index) != currentChar) {
+                        break;
+                    }
+                    end++;
+                }
+                builder.set(bitPos++, false);
+                queue.add(new Range(start, end, index + 1));
+                start = end;
+            }
+            builder.set(bitPos++, true);
+        }
+        return builder;
+    }
+
+    private static RankSelectBitSet createLoudsBitSet(RankSelectBitSet.Builder builder, String[] keys) {
         Arrays.parallelSort(keys);
         Queue<Range> queue = new ArrayDeque<>();
         queue.add(new Range(0, keys.length, 0));

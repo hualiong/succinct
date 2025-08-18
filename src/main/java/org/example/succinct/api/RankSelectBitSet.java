@@ -46,7 +46,7 @@ public interface RankSelectBitSet {
                 bits.set(block, oldBlock & ~mask); // 设置位为0
             }
             // 仅当位的值实际发生变化时更新计数器
-            if ((oldBlock & mask) != 0 != value) {
+            if ((oldBlock & mask) == 0 == value) {
                 count += value ? 1 : 0;
             }
         }

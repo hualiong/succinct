@@ -4,10 +4,12 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.example.succinct.common.SimpleFSA;
 import org.example.succinct.api.SuccinctSet;
 import org.example.succinct.core.*;
+import org.example.succinct.utils.RamUsageUtil;
 import org.example.succinct.utils.StringGenerateUtil;
 import org.junit.Test;
+import org.trie4j.louds.InlinedTailLOUDSTrie;
+import org.trie4j.patricia.PatriciaTrie;
 
-import static org.example.succinct.utils.RamUsageUtil.printSizeOf;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
@@ -52,11 +54,19 @@ public class SuccinctSetTest {
     @Test
     public void memoryTest() {
         String[] randoms = StringGenerateUtil.randomArray(1000000, 8, 0.0f);
-        printSizeOf(randoms, r -> randoms);
         Arrays.parallelSort(randoms);
-        // printSizeOf(randoms, r -> new ByteSuccinctSet(r, "UTF-8"));
-        // printSizeOf(randoms, ByteSuccinctSet::of);
-        printSizeOf(randoms, r -> new CharSuccinctSet(r, true));
-        printSizeOf(randoms, SimpleFSA::new);
+        PatriciaTrie pTrie = new PatriciaTrie();
+        for (String random : randoms) {
+            pTrie.insert(random);
+        }
+        InlinedTailLOUDSTrie trie = new InlinedTailLOUDSTrie(pTrie);
+        ByteSuccinctSet4 bss4 = ByteSuccinctSet4.of(randoms);
+        CharSuccinctSet4 css4 = CharSuccinctSet4.sortedOf(randoms);
+        SimpleFSA fsa = new SimpleFSA(randoms);
+        RamUsageUtil.printSizeOf(randoms);
+        RamUsageUtil.printSizeOf(trie);
+        RamUsageUtil.printSizeOf(bss4);
+        RamUsageUtil.printSizeOf(css4);
+        RamUsageUtil.printSizeOf(fsa);
     }
 }

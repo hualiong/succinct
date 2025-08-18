@@ -16,10 +16,10 @@ public class RamUsageUtil {
     }
 
     public static void printSizeOf(Object o) {
-        System.out.printf("%s: %s\n", o.getClass().getSimpleName(), estimateSizeOf(o));
+        System.out.printf("%s: %s\n", o.getClass().getSimpleName(), RamUsageEstimator.humanReadableUnits(GraphLayout.parseInstance(o).totalSize()));
     }
 
-    public static void printSizeOf(String[] randoms, Function<String[], Object> f) {
+    public static void printEstimateSizeOf(String[] randoms, Function<String[], Object> f) {
         long start = Timer.now();
         Object o = f.apply(randoms);
         String name = o instanceof SuccinctSet ? o.toString() : o.getClass().getSimpleName();

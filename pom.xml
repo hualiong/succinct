@@ -46,6 +46,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.github.takawitter</groupId>
+            <artifactId>trie4j</artifactId>
+            <version>RELEASE</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.openjdk.jol</groupId>
             <artifactId>jol-core</artifactId>
             <version>RELEASE</version>

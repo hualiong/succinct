@@ -9,15 +9,7 @@ public abstract class SuccinctSet2 extends SuccinctSet {
         this.size = size;
     }
 
-    public boolean contains(String key) {
-        throw new UnsupportedOperationException();
-    }
+    public abstract Iterable<String> prefixesOf(String key);
 
-    public int index(String key) {
-        throw new UnsupportedOperationException();
-    }
-
-    public String get(int nodeId) {
-        throw new UnsupportedOperationException();
-    }
+    public abstract Iterable<String> startsWith(String key);
 }

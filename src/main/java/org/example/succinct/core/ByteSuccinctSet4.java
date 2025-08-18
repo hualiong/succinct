@@ -17,7 +17,7 @@ import java.util.*;
  */
 public class ByteSuccinctSet4 extends SuccinctSet2 {
     private final RankSelectBitSet labelBitmap;
-    private final RankSelectBitSet isLeaf; // 标识第i个节点的链路是个单独的term
+    private final RankSelectBitSet isLeaf;
     private final StringEncoder encoder;
     private byte[] buffer = new byte[1024];
 
@@ -43,6 +43,7 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
             return a.length - b.length;
         });
         ByteArrayList labels = new ByteArrayList();
+        // TODO RankSelectBitSet4 的实际表现要比 RankSelectBitSet3 慢，需要排查原因
         RankSelectBitSet.Builder labelBitmapBuilder = new RankSelectBitSet4.Builder();
         RankSelectBitSet.Builder isLeafBuilder = new RankSelectBitSet4.Builder();
 
@@ -125,7 +126,10 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
             int id = nodeId, length = 0, bitmapIndex;
             while ((bitmapIndex = labelBitmap.select0(id)) >= 0) {
                 id = labelBitmap.rank1(bitmapIndex);
-                buffer[buffer.length - ++length] = labels[bitmapIndex - id];
+                if (buffer.length < ++length) {
+                    buffer = Arrays.copyOf(buffer, length);
+                }
+                buffer[buffer.length - length] = labels[bitmapIndex - id];
             }
             return new String(buffer, buffer.length - length, length, encoder.charset());
         }

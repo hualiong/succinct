@@ -11,8 +11,8 @@ import it.unimi.dsi.sux4j.bits.SimpleSelectZero;
 import org.example.succinct.api.RankSelectBitSet;
 
 public class RankSelectBitSet4 implements RankSelectBitSet {
-    public final LongArrayBitVector bits;
-    private final RankSelect rankSelect;
+    public final BitVector bits;
+    public final RankSelect rankSelect;
     public final long oneCount;
     public final int size;
 
@@ -36,7 +36,7 @@ public class RankSelectBitSet4 implements RankSelectBitSet {
         }
     }
 
-    private RankSelectBitSet4(LongArrayList bits, int size, int count, boolean rankSelect) {
+    public RankSelectBitSet4(LongArrayList bits, int size, int count, boolean rankSelect) {
         this.bits = LongArrayBitVector.wrap(bits.toLongArray());
         this.size = size;
         this.oneCount = count;

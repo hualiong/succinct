@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.Queue;
 
 /**
- * 基于 char 数组实现的第三代 Succinct Set
+ * 基于 char 数组实现的第四代 Succinct Set
  */
 public class CharSuccinctSet4 extends SuccinctSet {
     private final char[] buffer = new char[128];
