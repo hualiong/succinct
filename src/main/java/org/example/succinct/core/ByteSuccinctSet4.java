@@ -141,49 +141,43 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
     public Iterator<String> prefixesOf(String key) {
         return new Iterator<>() {
             private final byte[] bytes = encoder.encodeToBytes(key);
-            private int pos = 0;
+            private int i = 0;
             private int nodeId = 0;
             private int bitmapIndex = 0;
-            private boolean flag;
+            private String next;
+
+            {
+                advance();  // 初始化查找第一个前缀
+            }
 
             @Override
             public boolean hasNext() {
-                return flag;
+                return next != null;
             }
 
             @Override
             public String next() {
-                for (int i = pos; i < bytes.length; i++) {
-                    byte b = bytes[i];
-                    int low = bitmapIndex, mid = -1, high = labelBitmap.select1(nodeId + 1) - 1;
-                    if (high >= labelBitmap.size() || labelBitmap.get(high)) {
-                        flag = false;
-                        return null;
-                    }
-                    while (low <= high) {
-                        mid = low + high >>> 1;
-                        byte label = labels[mid - nodeId];
-                        if (label == b) {
-                            break;
-                        } else if (label < b) {
-                            low = mid + 1;
-                        } else {
-                            high = mid - 1;
-                        }
-                    }
-                    if (low > high) {
-                        flag = false;
-                        return null;
-                    }
-                    nodeId = mid + 1 - nodeId;
+                if (next == null) throw new NoSuchElementException();
+                String result = next;
+                advance();
+                return result;
+            }
+
+            private void advance() {
+                while (i < bytes.length) {
+                    int index = labelSearch(nodeId, bitmapIndex, bytes[i]);
+                    if (index < 0) break;
+
+                    nodeId = index + 1 - nodeId;
                     bitmapIndex = labelBitmap.select1(nodeId) + 1;
+                    i++;
+
                     if (isLeaf.get(nodeId)) {
-                        pos = i + 1;
-                        return new String(bytes, 0, pos, encoder.charset());
+                        next = new String(bytes, 0, i, encoder.charset());
+                        return;
                     }
                 }
-                flag = false;
-                return null;
+                next = null;
             }
         };
     }
@@ -193,29 +187,37 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
         int nodeId = 0, bitmapIndex = 0;
         buffer.rewind();
         while (buffer.hasRemaining()) {
-            byte b = buffer.get();
-            int low = bitmapIndex, mid = -1, high = labelBitmap.select1(nodeId + 1) - 1;
-            if (high >= labelBitmap.size() || labelBitmap.get(high)) {
-                return -1;
-            }
-            while (low <= high) {
-                mid = low + high >>> 1;
-                byte label = labels[mid - nodeId];
-                if (label == b) {
-                    break;
-                } else if (label < b) {
-                    low = mid + 1;
-                } else {
-                    high = mid - 1;
-                }
-            }
-            if (low > high) {
-                return -1;
-            }
-            nodeId = mid + 1 - nodeId;
+            int index = labelSearch(nodeId, bitmapIndex, buffer.get());
+            if (index < 0) return -1;
+
+            nodeId = index + 1 - nodeId;
             bitmapIndex = labelBitmap.select1(nodeId) + 1;
         }
         return nodeId;
+    }
+
+    /**
+     * 在指定节点的子节点中查找字节
+     * @return 包含目标字节在labelbitmap中的下标
+     */
+    private int labelSearch(int nodeId, int bitmapIndex, byte b) {
+        int high = labelBitmap.select1(nodeId + 1) - 1;
+        if (high >= labelBitmap.size() || labelBitmap.get(high)) {
+            return -1;
+        }
+        int low = bitmapIndex, mid = -1;
+        while (low <= high) {
+            mid = low + high >>> 1;
+            byte label = labels[mid - nodeId];
+            if (label == b) {
+                break;
+            } else if (label < b) {
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+        return low > high ? -1 : mid;
     }
 
     public TermIterator iterator() {

@@ -22,12 +22,9 @@ import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 @SuppressWarnings("unused")
 public class Main {
     public static void main(String[] args) {
-        SuccinctSet2 set = ByteSuccinctSet4.of("he", "hello", "helloworld");
-        Iterator<String> prefixes = set.prefixesOf("helloworlds"); // prefixKeysOf
-        String s;
-        while ((s = prefixes.next()) != null) {
-            System.out.println(s);
-        }
+        SuccinctSet2 set = ByteSuccinctSet4.of("he", "hero", "hello", "helloworld");
+        Iterator<String> prefixes = set.prefixesOf("helloworld"); // prefixKeysOf
+        prefixes.forEachRemaining(System.out::println);
     }
 
     public static void containsTimeTest(int flag) {
