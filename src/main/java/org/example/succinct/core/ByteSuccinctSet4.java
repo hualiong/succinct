@@ -90,11 +90,10 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
             nodeId++;
         }
         return new ByteSuccinctSet4(
-            labels.toByteArray(),
-            labelBitmapBuilder.build(true),
-            isLeafBuilder.build(false),
-            encoder
-        );
+                labels.toByteArray(),
+                labelBitmapBuilder.build(true),
+                isLeafBuilder.build(false),
+                encoder);
     }
 
     public ByteSuccinctSet4(byte[] labels, RankSelectBitSet labelBitmap, RankSelectBitSet isLeaf,
@@ -142,12 +141,13 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
         return new Iterator<>() {
             private final byte[] bytes = encoder.encodeToBytes(str);
             private int pos = 0;
+            private int layer = 0;
             private int nodeId = 0;
             private int bitmapIndex = 0;
             private String next;
 
             {
-                advance();  // 初始化查找第一个前缀
+                advance(); // 初始化查找第一个前缀
             }
 
             @Override
@@ -157,7 +157,9 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
 
             @Override
             public String next() {
-                if (next == null) throw new NoSuchElementException();
+                if (next == null) {
+                    throw new NoSuchElementException();
+                }
                 String result = next;
                 advance();
                 return result;
@@ -165,13 +167,14 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
 
             private void advance() {
                 while (pos < bytes.length) {
-                    int index = labelSearch(nodeId, bitmapIndex, bytes[pos]);
-                    if (index < 0) break;
-
+                    int index = labelSearch(nodeId, bitmapIndex, bytes[pos], layer < 3);
+                    if (index < 0) {
+                        break;
+                    }
                     nodeId = index + 1 - nodeId;
                     bitmapIndex = labelBitmap.select1(nodeId) + 1;
+                    layer++;
                     pos++;
-
                     if (isLeaf.get(nodeId)) {
                         next = new String(bytes, 0, pos, encoder.charset());
                         return;
@@ -184,12 +187,14 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
 
     private int extract(String key) {
         ByteBuffer buffer = encoder.encodeToBuffer(key);
-        int nodeId = 0, bitmapIndex = 0;
+        int nodeId = 0, bitmapIndex = 0, layer = 0;
         buffer.rewind();
         while (buffer.hasRemaining()) {
-            int index = labelSearch(nodeId, bitmapIndex, buffer.get());
-            if (index < 0) return -1;
-
+            int index = labelSearch(nodeId, bitmapIndex, buffer.get(), layer < 3);
+            if (index < 0) {
+                return -1;
+            }
+            layer++;
             nodeId = index + 1 - nodeId;
             bitmapIndex = labelBitmap.select1(nodeId) + 1;
         }
@@ -202,47 +207,62 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
      * @param nodeId      当前节点ID
      * @param bitmapIndex 当前节点在 {@code labelBitmap} 中的起始下标
      * @param b           要搜索的标签
+     * @param bSearch     是否使用二分查找
      * @return 目标标签在 {@code labelBitmap} 中的下标，否则返回 -1
      */
-    private int labelSearch(int nodeId, int bitmapIndex, byte b) {
-        int high = labelBitmap.select1(nodeId + 1) - 1;
-        System.out.println(high - bitmapIndex);
-        if (high >= labelBitmap.size() || labelBitmap.get(high)) {
-            return -1;
-        }
-        int low = bitmapIndex, mid = -1;
-        while (low <= high) {
-            mid = low + high >>> 1;
-            byte label = labels[mid - nodeId];
-            if (label == b) {
-                break;
-            } else if (label < b) {
-                low = mid + 1;
-            } else {
-                high = mid - 1;
+    private int labelSearch(int nodeId, int bitmapIndex, byte b, boolean bSearch) {
+        if (bSearch) {
+            int high = labelBitmap.select1(nodeId + 1) - 1;
+            if (high >= labelBitmap.size() || labelBitmap.get(high)) {
+                return -1;
             }
+            // System.out.println("bSearch: " + (high - bitmapIndex + 1));
+            int low = bitmapIndex, mid = -1;
+            while (low <= high) {
+                mid = low + high >>> 1;
+                byte label = labels[mid - nodeId];
+                if (label == b) {
+                    break;
+                } else if (label < b) {
+                    low = mid + 1;
+                } else {
+                    high = mid - 1;
+                }
+            }
+            return low > high ? -1 : mid;
+        } else {
+            // int st = bitmapIndex;
+            while (true) {
+                if (bitmapIndex >= labelBitmap.size() || labelBitmap.get(bitmapIndex)) {
+                    return -1;
+                }
+                int labelIndex = bitmapIndex - nodeId;
+                if (labelIndex < labels.length && labels[labelIndex] == b) {
+                    break;
+                }
+                bitmapIndex++;
+            }
+            // System.out.println("order: " + (bitmapIndex - st + 1));
+            return bitmapIndex;
         }
-        return low > high ? -1 : mid;
     }
 
-    public TermIterator iterator() {
-        return new TermIterator();
-    }
+    public Iterator<String> iterator() {
+        return new Iterator<>() {
+            private int index = isLeaf.nextSetBit(0);
 
-    public class TermIterator implements Iterator<String> {
-        private int index = isLeaf.nextSetBit(0);
+            @Override
+            public boolean hasNext() {
+                return index >= 0;
+            }
 
-        @Override
-        public boolean hasNext() {
-            return index >= 0;
-        }
-
-        @Override
-        public String next() {
-            String str = get(index);
-            index = isLeaf.nextSetBit(index + 1);
-            return str;
-        }
+            @Override
+            public String next() {
+                String str = get(index);
+                index = isLeaf.nextSetBit(index + 1);
+                return str;
+            }
+        };
     }
 
     @Override
