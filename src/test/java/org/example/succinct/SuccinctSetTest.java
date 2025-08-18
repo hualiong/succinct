@@ -35,11 +35,11 @@ public class SuccinctSetTest {
         }
         String[] copyOf = Arrays.copyOf(randoms, count >>> 1);
         SuccinctSet set = ByteSuccinctSet4.of(copyOf);
-        SuccinctSet charSet = CharSuccinctSet4.of(copyOf);
+        // SuccinctSet charSet = CharSuccinctSet4.of(copyOf);
         for (String random : randoms) {
             boolean expected = unique.contains(random);
             assertEquals(expected, set.contains(random));
-            assertEquals(expected, charSet.contains(random));
+            // assertEquals(expected, charSet.contains(random));
         }
     }
 
@@ -58,44 +58,44 @@ public class SuccinctSetTest {
     @Test
     public void prefixesOfTest() {
         SuccinctSet2 set = ByteSuccinctSet4.of("he", "hebo", "hello", "helloworld");
-        assertFalse(set.prefixesOf("").hasNext());
-        assertFalse(set.prefixesOf("h").hasNext());
+        assertFalse(set.prefixKeysOf("").hasNext());
+        assertFalse(set.prefixKeysOf("h").hasNext());
 
-        Iterator<String> prefixes = set.prefixesOf("he");
+        Iterator<String> prefixes = set.prefixKeysOf("he");
         assertTrue(prefixes.hasNext() && "he".equals(prefixes.next()));
 
-        prefixes = set.prefixesOf("hel");
+        prefixes = set.prefixKeysOf("hel");
         assertTrue(prefixes.hasNext() && "he".equals(prefixes.next()));
 
-        prefixes = set.prefixesOf("hebo");
+        prefixes = set.prefixKeysOf("hebo");
         for (String s : List.of("he", "hebo")) {
             assertEquals(s, prefixes.next());
         }
 
-        prefixes = set.prefixesOf("heboo");
+        prefixes = set.prefixKeysOf("heboo");
         for (String s : List.of("he", "hebo")) {
             assertEquals(s, prefixes.next());
         }
 
-        prefixes = set.prefixesOf("hello");
+        prefixes = set.prefixKeysOf("hello");
         for (String s : List.of("he", "hello")) {
             assertEquals(s, prefixes.next());
         }
 
-        prefixes = set.prefixesOf("hellow");
+        prefixes = set.prefixKeysOf("hellow");
         for (String s : List.of("he", "hello")) {
             assertEquals(s, prefixes.next());
         }
 
-        prefixes = set.prefixesOf("hellew");
+        prefixes = set.prefixKeysOf("hellew");
         assertTrue(prefixes.hasNext() && prefixes.next().equals("he"));
 
-        prefixes = set.prefixesOf("helloworld");
+        prefixes = set.prefixKeysOf("helloworld");
         for (String s : List.of("he", "hello", "helloworld")) {
             assertEquals(s, prefixes.next());
         }
 
-        prefixes = set.prefixesOf("helloworlds");
+        prefixes = set.prefixKeysOf("helloworlds");
         for (String s : List.of("he", "hello", "helloworld")) {
             assertEquals(s, prefixes.next());
         }

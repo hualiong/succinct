@@ -25,7 +25,7 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
     public static ByteSuccinctSet4 of(String... keys) {
         return ByteSuccinctSet4.of(keys, "GB18030");
     }
-    
+
     public static ByteSuccinctSet4 of(String[] keys, String charset) {
         // 转换为字节数组并排序
         StringEncoder encoder = new StringEncoder(Charset.forName(charset));
@@ -138,10 +138,10 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
     }
 
     @Override
-    public Iterator<String> prefixesOf(String key) {
+    public Iterator<String> prefixKeysOf(String str) {
         return new Iterator<>() {
-            private final byte[] bytes = encoder.encodeToBytes(key);
-            private int i = 0;
+            private final byte[] bytes = encoder.encodeToBytes(str);
+            private int pos = 0;
             private int nodeId = 0;
             private int bitmapIndex = 0;
             private String next;
@@ -164,16 +164,16 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
             }
 
             private void advance() {
-                while (i < bytes.length) {
-                    int index = labelSearch(nodeId, bitmapIndex, bytes[i]);
+                while (pos < bytes.length) {
+                    int index = labelSearch(nodeId, bitmapIndex, bytes[pos]);
                     if (index < 0) break;
 
                     nodeId = index + 1 - nodeId;
                     bitmapIndex = labelBitmap.select1(nodeId) + 1;
-                    i++;
+                    pos++;
 
                     if (isLeaf.get(nodeId)) {
-                        next = new String(bytes, 0, i, encoder.charset());
+                        next = new String(bytes, 0, pos, encoder.charset());
                         return;
                     }
                 }
@@ -197,11 +197,16 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
     }
 
     /**
-     * 在指定节点的子节点中查找字节
-     * @return 包含目标字节在labelbitmap中的下标
+     * 搜索标签向下层转移
+     *
+     * @param nodeId      当前节点ID
+     * @param bitmapIndex 当前节点在 {@code labelBitmap} 中的起始下标
+     * @param b           要搜索的标签
+     * @return 目标标签在 {@code labelBitmap} 中的下标，否则返回 -1
      */
     private int labelSearch(int nodeId, int bitmapIndex, byte b) {
         int high = labelBitmap.select1(nodeId + 1) - 1;
+        System.out.println(high - bitmapIndex);
         if (high >= labelBitmap.size() || labelBitmap.get(high)) {
             return -1;
         }

@@ -1,5 +1,6 @@
 package org.example;
 
+import org.apache.commons.collections4.trie.PatriciaTrie;
 import org.example.succinct.api.SuccinctSet2;
 import org.example.succinct.core.*;
 import org.example.succinct.common.*;
@@ -22,9 +23,9 @@ import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 @SuppressWarnings("unused")
 public class Main {
     public static void main(String[] args) {
-        SuccinctSet2 set = ByteSuccinctSet4.of("he", "hero", "hello", "helloworld");
-        Iterator<String> prefixes = set.prefixesOf("helloworld"); // prefixKeysOf
-        prefixes.forEachRemaining(System.out::println);
+        String[] randoms = StringGenerateUtil.randomArray(1000000, 8, 1.0f);
+        SuccinctSet2 set = ByteSuccinctSet4.of(randoms);
+        System.out.println(set.contains(randoms[0]));
     }
 
     public static void containsTimeTest(int flag) {

@@ -11,9 +11,9 @@ public abstract class SuccinctSet2 extends SuccinctSet {
         this.size = size;
     }
 
-    public abstract Iterator<String> prefixesOf(String key);
+    public abstract Iterator<String> prefixKeysOf(String str);
 
-    public Iterator<String> startsWith(String key) {
+    public Iterator<String> prefixSearch(String str) {
         throw new UnsupportedOperationException();
     }
 }

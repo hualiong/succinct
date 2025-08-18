@@ -7,7 +7,6 @@ import org.example.succinct.utils.Recorder;
 import org.example.succinct.utils.StringGenerateUtil;
 import org.example.succinct.utils.Timer;
 import org.trie4j.louds.InlinedTailLOUDSTrie;
-import org.trie4j.louds.TailLOUDSTrie;
 import org.trie4j.patricia.PatriciaTrie;
 
 import static org.example.succinct.utils.RamUsageUtil.sizeOf;
@@ -87,5 +86,4 @@ public class SuccinctSetTimeTest {
         System.out.printf("ByteSuccinctSet3: %dms\n", Timer.ms(t2, t3));
         System.out.printf("CharSuccinctSet4: %dms\n", Timer.ms(t3, t4));
     }
-
 }
