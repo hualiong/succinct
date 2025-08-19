@@ -1,36 +1,40 @@
 package org.example.succinct.core;
 
+import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import org.example.succinct.api.RankSelectBitSet;
+import org.example.succinct.api.SuccinctTrie;
 import org.example.succinct.common.Range;
 import org.example.succinct.common.RankSelectBitSet4;
-import org.example.succinct.api.SuccinctSet2;
 import org.example.succinct.utils.StringEncoder;
-
-import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Queue;
 
 /**
  * 基于 byte 数组实现的第四代 Succinct Set，0标识子节点，1标识结束
  * Note: 从前缀树上看，当前标签位于弧上，归属上个节点，断言
  */
-public class ByteSuccinctSet4 extends SuccinctSet2 {
+public class ByteSuccinctTrie implements SuccinctTrie {
+    private final byte[] labels;
     private final RankSelectBitSet labelBitmap;
     private final RankSelectBitSet isLeaf;
     private final StringEncoder encoder;
     private byte[] buffer = new byte[512];
 
-    public static ByteSuccinctSet4 of(String... keys) {
-        return ByteSuccinctSet4.of(keys, "GB18030", false);
+    public static ByteSuccinctTrie of(String... keys) {
+        return ByteSuccinctTrie.of(keys, "GB18030", false);
     }
 
-    public static ByteSuccinctSet4 sortedOf(String... keys) {
-        return ByteSuccinctSet4.of(keys, "GB18030", true);
+    public static ByteSuccinctTrie sortedOf(String... keys) {
+        return ByteSuccinctTrie.of(keys, "GB18030", true);
     }
 
-    public static ByteSuccinctSet4 of(String[] keys, String charset, boolean sorted) {
+    public static ByteSuccinctTrie of(String[] keys, String charset, boolean sorted) {
         StringEncoder encoder = new StringEncoder(Charset.forName(charset));
         // 按字节数组字典序排序
         if (!sorted) {
@@ -86,16 +90,16 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
             labelBitmapBuilder.set(bitPos++, true); // 结束标记
             nodeId++;
         }
-        return new ByteSuccinctSet4(
+        return new ByteSuccinctTrie(
                 labels.toByteArray(),
                 labelBitmapBuilder.build(true),
                 isLeafBuilder.build(false),
                 encoder);
     }
 
-    public ByteSuccinctSet4(byte[] labels, RankSelectBitSet labelBitmap, RankSelectBitSet isLeaf,
-            StringEncoder encoder) {
-        super(labels, isLeaf.oneCount());
+    public ByteSuccinctTrie(byte[] labels, RankSelectBitSet labelBitmap, RankSelectBitSet isLeaf,
+                            StringEncoder encoder) {
+        this.labels = labels;
         this.labelBitmap = labelBitmap;
         this.isLeaf = isLeaf;
         this.encoder = encoder;
@@ -103,6 +107,11 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
 
     public RankSelectBitSet labelBitmap() {
         return labelBitmap;
+    }
+
+    @Override
+    public long size() {
+        return isLeaf.oneCount();
     }
 
     @Override

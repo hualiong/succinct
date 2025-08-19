@@ -34,7 +34,7 @@ public class StringEncoder {
      */
     public static int getChars(String str, char[] dest) {
         int length = Math.min(str.length(), dest.length);
-        if (length <= 0) return 0;
+        if (length == 0) return 0;
         
         str.getChars(0, length, dest, 0);
         return length;

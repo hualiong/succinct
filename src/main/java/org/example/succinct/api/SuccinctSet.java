@@ -1,15 +1,17 @@
 package org.example.succinct.api;
 
-public abstract class SuccinctSet {
-    public boolean contains(String key) {
+public interface SuccinctSet {
+    long size();
+
+    default boolean contains(String key) {
         throw new UnsupportedOperationException();
     }
 
-    public int index(String key) {
+    default int index(String key) {
         throw new UnsupportedOperationException();
     }
 
-    public String get(int nodeId) {
+    default String get(int nodeId) {
         throw new UnsupportedOperationException();
     }
 }

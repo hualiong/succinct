@@ -1,7 +1,7 @@
 package org.example.succinct;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.example.succinct.api.SuccinctSet2;
+import org.example.succinct.api.SuccinctTrie;
 import org.example.succinct.common.SimpleFSA;
 import org.example.succinct.api.SuccinctSet;
 import org.example.succinct.core.*;
@@ -34,7 +34,7 @@ public class SuccinctSetTest {
             }
         }
         String[] copyOf = Arrays.copyOf(randoms, count >>> 1);
-        SuccinctSet set = ByteSuccinctSet4.of(copyOf);
+        SuccinctSet set = CharSuccinctTrie.of(copyOf);
         // SuccinctSet charSet = CharSuccinctSet4.of(copyOf);
         for (String random : randoms) {
             boolean expected = unique.contains(random);
@@ -47,11 +47,11 @@ public class SuccinctSetTest {
     public void getTest() {
         int count = 20000;
         String[] randoms = StringGenerateUtil.randomArray(count, 10, 0.0f);
-        ByteSuccinctSet4 bss4 = ByteSuccinctSet4.of(randoms);
-        ByteSuccinctSet3 bss3 = ByteSuccinctSet3.of(randoms);
+        CharSuccinctSet bss4 = CharSuccinctSet.of(randoms);
+        CharSuccinctTrie cst = CharSuccinctTrie.of(randoms);
         long size = bss4.labelBitmap().oneCount();
         for (int i = 0; i < size; i++) {
-            assertEquals(bss3.get(i), bss4.get(i));
+            assertEquals(bss4.get(i), cst.get(i));
         }
     }
 
@@ -60,8 +60,8 @@ public class SuccinctSetTest {
         int count = 20000;
         String[] randoms = StringGenerateUtil.randomArray(count, 10, 0.5f);
         Arrays.parallelSort(randoms);
-        ByteSuccinctSet4 bss4 = ByteSuccinctSet4.sortedOf(randoms);
-        Iterator<String> iterator = bss4.iterator(true);
+        CharSuccinctTrie cst = CharSuccinctTrie.sortedOf(randoms);
+        Iterator<String> iterator = cst.iterator(true);
         for (String s : randoms) {
             assertEquals(s, iterator.next());
         }
@@ -69,7 +69,7 @@ public class SuccinctSetTest {
 
     @Test
     public void prefixesOfTest() {
-        SuccinctSet2 set = ByteSuccinctSet4.of("he", "hebo", "hello", "helloworld");
+        SuccinctTrie set = CharSuccinctTrie.of("he", "hebo", "hello", "helloworld");
         assertFalse(set.prefixKeysOf("").hasNext());
         assertFalse(set.prefixKeysOf("h").hasNext());
 
@@ -83,22 +83,18 @@ public class SuccinctSetTest {
         for (String s : List.of("he", "hebo")) {
             assertEquals(s, prefixes.next());
         }
-
         prefixes = set.prefixKeysOf("heboo");
         for (String s : List.of("he", "hebo")) {
             assertEquals(s, prefixes.next());
         }
-
         prefixes = set.prefixKeysOf("hello");
         for (String s : List.of("he", "hello")) {
             assertEquals(s, prefixes.next());
         }
-
         prefixes = set.prefixKeysOf("hellow");
         for (String s : List.of("he", "hello")) {
             assertEquals(s, prefixes.next());
         }
-
         prefixes = set.prefixKeysOf("hellew");
         assertTrue(prefixes.hasNext() && prefixes.next().equals("he"));
 
@@ -106,7 +102,6 @@ public class SuccinctSetTest {
         for (String s : List.of("he", "hello", "helloworld")) {
             assertEquals(s, prefixes.next());
         }
-
         prefixes = set.prefixKeysOf("helloworlds");
         for (String s : List.of("he", "hello", "helloworld")) {
             assertEquals(s, prefixes.next());
@@ -122,8 +117,8 @@ public class SuccinctSetTest {
             pTrie.insert(random);
         }
         InlinedTailLOUDSTrie trie = new InlinedTailLOUDSTrie(pTrie);
-        ByteSuccinctSet4 bss4 = ByteSuccinctSet4.sortedOf(randoms);
-        CharSuccinctSet4 css4 = CharSuccinctSet4.sortedOf(randoms);
+        ByteSuccinctSet bss4 = ByteSuccinctSet.sortedOf(randoms);
+        CharSuccinctSet css4 = CharSuccinctSet.sortedOf(randoms);
         SimpleFSA fsa = new SimpleFSA(randoms);
         RamUsageUtil.printSizeOf(randoms);
         RamUsageUtil.printSizeOf(trie);

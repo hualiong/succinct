@@ -1,34 +1,33 @@
-package org.example.succinct.core;
+package org.example.succinct.archive;
 
-import it.unimi.dsi.fastutil.chars.CharArrayList;
 import org.example.succinct.api.RankSelectBitSet;
 import org.example.succinct.common.Range;
 import org.example.succinct.common.RankSelectBitSet3;
-import org.example.succinct.api.SuccinctSet;
-import org.example.succinct.utils.StringEncoder;
+
+import it.unimi.dsi.fastutil.chars.CharArrayList;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Queue;
 
 /**
- * 基于 char 数组实现的第三代 Succinct Set
+ * 基于 char 数组实现的第二代 Succinct Set
  */
-public class CharSuccinctSet3 extends SuccinctSet {
-    private final char[] buffer = new char[128];
+@SuppressWarnings("unused")
+public class CharSuccinctSet2 {
     private final char[] labels;
     private final RankSelectBitSet labelBitmap;
     private final RankSelectBitSet isLeaf;
 
-    public static CharSuccinctSet3 of(String... keys) {
-        return new CharSuccinctSet3(keys, false);
+    public static CharSuccinctSet2 of(String... keys) {
+        return new CharSuccinctSet2(keys, false);
     }
 
-    public static CharSuccinctSet3 sortedOf(String... keys) {
-        return new CharSuccinctSet3(keys, true);
+    public static CharSuccinctSet2 sortedOf(String... keys) {
+        return new CharSuccinctSet2(keys, true);
     }
 
-    public CharSuccinctSet3(String[] keys, boolean sorted) {
+    public CharSuccinctSet2(String[] keys, boolean sorted) {
         if (!sorted) {
             Arrays.parallelSort(keys);
         }
@@ -90,7 +89,6 @@ public class CharSuccinctSet3 extends SuccinctSet {
         this.isLeaf = isLeafBuilder.build(false);
     }
 
-    @Override
     public int index(String key) {
         int nodeId = extract(key);
         return nodeId >= 0 && isLeaf.get(nodeId) ? nodeId : -1;
@@ -98,8 +96,7 @@ public class CharSuccinctSet3 extends SuccinctSet {
 
     private int extract(String key) {
         int nodeId = 0, bitmapIndex = 0;
-        int length = StringEncoder.getChars(key, buffer);
-        for (int i = 0; i < length; i++) {
+        for (char c : key.toCharArray()) {
             int low = bitmapIndex, mid = -1, high = labelBitmap.select1(nodeId + 1) - 1;
             if (high >= labelBitmap.size() || labelBitmap.get(high)) {
                 return -1;
@@ -107,9 +104,9 @@ public class CharSuccinctSet3 extends SuccinctSet {
             while (low <= high) {
                 mid = low + high >>> 1;
                 char label = labels[mid - nodeId];
-                if (label == buffer[i]) {
+                if (label == c) {
                     break;
-                } else if (label < buffer[i]) {
+                } else if (label < c) {
                     low = mid + 1;
                 } else {
                     high = mid - 1;
@@ -124,7 +121,6 @@ public class CharSuccinctSet3 extends SuccinctSet {
         return nodeId;
     }
 
-    @Override
     public String get(int nodeId) {
         if (isLeaf.get(nodeId)) {
             StringBuilder str = new StringBuilder();
@@ -138,7 +134,6 @@ public class CharSuccinctSet3 extends SuccinctSet {
         return null;
     }
 
-    @Override
     public boolean contains(String key) {
         int nodeId = extract(key);
         return nodeId >= 0 && isLeaf.get(nodeId);

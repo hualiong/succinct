@@ -1,9 +1,8 @@
-package org.example.succinct.core;
+package org.example.succinct.archive;
 
 import org.example.succinct.api.RankSelectBitSet;
 import org.example.succinct.common.Range;
 import org.example.succinct.common.RankSelectBitSet3;
-import org.example.succinct.api.SuccinctSet;
 import org.example.succinct.utils.StringEncoder;
 
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
@@ -15,7 +14,8 @@ import java.util.*;
 /**
  * 基于 byte 数组实现的第三代 Succinct Set
  */
-public class ByteSuccinctSet3 extends SuccinctSet {
+@SuppressWarnings("unused")
+public class ByteSuccinctSet3 {
     private final byte[] labels;
     private final RankSelectBitSet labelBitmap;
     private final RankSelectBitSet isLeaf;
@@ -100,19 +100,16 @@ public class ByteSuccinctSet3 extends SuccinctSet {
         this.isLeaf = isLeafBuilder.build(false);
     }
 
-    @Override
     public int index(String key) {
         int nodeId = extract(key);
         return nodeId >= 0 && isLeaf.get(nodeId) ? nodeId : -1;
     }
 
-    @Override
     public boolean contains(String key) {
         int nodeId = extract(key);
         return nodeId >= 0 && isLeaf.get(nodeId);
     }
 
-    @Override
     public String get(int nodeId) {
         if (isLeaf.get(nodeId)) {
             int id = nodeId;

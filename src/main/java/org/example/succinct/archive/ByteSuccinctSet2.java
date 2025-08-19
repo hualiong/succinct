@@ -1,9 +1,8 @@
-package org.example.succinct.core;
+package org.example.succinct.archive;
 
 import org.example.succinct.api.RankSelectBitSet;
 import org.example.succinct.common.Range;
 import org.example.succinct.common.RankSelectBitSet3;
-import org.example.succinct.api.SuccinctSet;
 
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 
@@ -13,7 +12,8 @@ import java.util.*;
 /**
  * 基于 byte 数组实现的第二代 Succinct Set
  */
-public class ByteSuccinctSet2 extends SuccinctSet {
+@SuppressWarnings("unused")
+public class ByteSuccinctSet2 {
     private final Charset charset;
     private final byte[] labels;
     private final RankSelectBitSet labelBitmap;
@@ -103,19 +103,16 @@ public class ByteSuccinctSet2 extends SuccinctSet {
         this.isLeaf = isLeafBuilder.build(false);
     }
 
-    @Override
     public int index(String key) {
         int nodeId = extract(key);
         return nodeId >= 0 && isLeaf.get(nodeId) ? nodeId : -1;
     }
 
-    @Override
     public boolean contains(String key) {
         int nodeId = extract(key);
         return nodeId >= 0 && isLeaf.get(nodeId);
     }
 
-    @Override
     public String get(int nodeId) {
         if (isLeaf.get(nodeId)) {
             int id = nodeId;
@@ -138,18 +135,6 @@ public class ByteSuccinctSet2 extends SuccinctSet {
         byte[] bytes = key.getBytes(charset);
         int nodeId = 0, bitmapIndex = 0;
         for (byte b : bytes) {
-            // while (true) {
-            // if (bitmapIndex >= labelBitmap.size( || labelBitmap.get(bitmapIndex)) {
-            // return -1;
-            // }
-            // int labelIndex = bitmapIndex - nodeId;
-            // if (labelIndex < labels.length && labels[labelIndex] == b) {
-            // break;
-            // }
-            // bitmapIndex++;
-            // }
-            // nodeId = bitmapIndex + 1 - nodeId;
-            // bitmapIndex = labelBitmap.select1(nodeId) + 1;
             int low = bitmapIndex, mid = -1, high = labelBitmap.select1(nodeId + 1) - 1;
             if (high >= labelBitmap.size() || labelBitmap.get(high)) {
                 return -1;

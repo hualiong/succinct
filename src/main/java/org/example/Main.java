@@ -1,17 +1,15 @@
 package org.example;
 
-import org.apache.commons.lang3.RandomStringUtils;
-import org.example.succinct.api.SuccinctSet2;
+import org.example.succinct.archive.ByteSuccinctSet3;
+import org.example.succinct.archive.CharSuccinctSet3;
 import org.example.succinct.core.*;
 import org.example.succinct.common.*;
 import org.example.succinct.api.RankSelectBitSet;
-import org.example.succinct.api.SuccinctSet;
 import org.example.succinct.utils.Recorder;
 import org.example.succinct.utils.StringEncoder;
 import org.example.succinct.utils.StringGenerateUtil;
 import org.example.succinct.utils.Timer;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -23,7 +21,7 @@ import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 @SuppressWarnings("unused")
 public class Main {
     public static void main(String[] args) {
-        ByteSuccinctSet4 set4 = ByteSuccinctSet4.of("banana", "apple", "cherry", "date", "grape", "fig", "elderberry");
+        ByteSuccinctSet set4 = ByteSuccinctSet.of("banana", "apple", "cherry", "date", "grape", "fig", "elderberry");
         set4.iterator(true).forEachRemaining(System.out::println);
     }
 
@@ -33,7 +31,6 @@ public class Main {
         System.out.printf("Data: %s\n", sizeOf(randoms));
         Arrays.parallelSort(randoms);
         Recorder t = new Recorder();
-        SuccinctSet ss;
         if ((flag & 1) > 0) {
             Set<String> set = Set.of(randoms);
             t.multi(randoms, set::contains);
@@ -47,25 +44,25 @@ public class Main {
             t.reset();
         }
         if ((flag & 4) > 0) {
-            ss = ByteSuccinctSet4.of(randoms);
+            ByteSuccinctSet ss = ByteSuccinctSet.of(randoms);
             t.multi(randoms, ss::contains);
             System.out.printf("%s: %dms | %s\n", ss.getClass().getSimpleName(), t.sum(), sizeOf(ss));
             t.reset();
         }
         if ((flag & 8) > 0) {
-            ss = ByteSuccinctSet3.of(randoms);
+            ByteSuccinctSet3 ss = ByteSuccinctSet3.of(randoms);
             t.multi(randoms, ss::contains);
             System.out.printf("%s: %dms | %s\n", ss.getClass().getSimpleName(), t.sum(), sizeOf(ss));
             t.reset();
         }
         if ((flag & 16) > 0) {
-            ss = CharSuccinctSet4.sortedOf(randoms);
+            CharSuccinctSet ss = CharSuccinctSet.sortedOf(randoms);
             t.multi(randoms, ss::contains);
             System.out.printf("%s: %dms | %s\n", ss.getClass().getSimpleName(), t.sum(), sizeOf(ss));
             t.reset();
         }
         if ((flag & 32) > 0) {
-            ss = CharSuccinctSet3.sortedOf(randoms);
+            CharSuccinctSet3 ss = CharSuccinctSet3.sortedOf(randoms);
             t.multi(randoms, ss::contains);
             System.out.printf("%s: %dms | %s\n", ss.getClass().getSimpleName(), t.sum(), sizeOf(ss));
             t.reset();

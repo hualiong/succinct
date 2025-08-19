@@ -1,5 +1,7 @@
 package org.example.succinct.test;
 
+import org.example.succinct.archive.ByteSuccinctSet3;
+import org.example.succinct.archive.CharSuccinctSet3;
 import org.example.succinct.common.SimpleFSA;
 import org.example.succinct.api.SuccinctSet;
 import org.example.succinct.core.*;
@@ -27,10 +29,10 @@ public class SuccinctSetTimeTest {
             pTrie.insert(random);
         }
         InlinedTailLOUDSTrie trie = new InlinedTailLOUDSTrie(pTrie);
-        SuccinctSet bss3 = ByteSuccinctSet3.of(randoms);
-        SuccinctSet bss4 = ByteSuccinctSet4.of(randoms);
-        SuccinctSet css3 = CharSuccinctSet3.sortedOf(randoms);
-        SuccinctSet css4 = CharSuccinctSet4.sortedOf(randoms);
+        ByteSuccinctSet3 bss3 = ByteSuccinctSet3.of(randoms);
+        SuccinctSet bss4 = ByteSuccinctSet.of(randoms);
+        CharSuccinctSet3 css3 = CharSuccinctSet3.sortedOf(randoms);
+        SuccinctSet css4 = CharSuccinctSet.sortedOf(randoms);
         SimpleFSA fsa = new SimpleFSA(randoms);
         Recorder t = new Recorder();
         System.out.printf("Data: %s\n", sizeOf(randoms));
@@ -58,9 +60,9 @@ public class SuccinctSetTimeTest {
     
     public static void getTimeTest(int count) {
         String[] randoms = StringGenerateUtil.randomArray(count, 32, 0.0f);
-        ByteSuccinctSet4 bss4 = ByteSuccinctSet4.of(randoms);
+        ByteSuccinctSet bss4 = ByteSuccinctSet.of(randoms);
         ByteSuccinctSet3 bss3 = ByteSuccinctSet3.of(randoms);
-        CharSuccinctSet4 css4 = CharSuccinctSet4.of(randoms);
+        CharSuccinctSet css4 = CharSuccinctSet.of(randoms);
         int size = (int) bss4.labelBitmap().oneCount();
         for (int i = 0; i < size; i++) {
             bss4.get(i);
