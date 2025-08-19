@@ -1,5 +1,7 @@
 package org.example;
 
+import org.apache.lucene.util.fst.BytesRefFSTEnum;
+import org.example.succinct.api.SuccinctTrie;
 import org.example.succinct.archive.ByteSuccinctSet3;
 import org.example.succinct.archive.CharSuccinctSet3;
 import org.example.succinct.core.*;
@@ -10,23 +12,58 @@ import org.example.succinct.utils.StringEncoder;
 import org.example.succinct.utils.StringGenerateUtil;
 import org.example.succinct.utils.Timer;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "ResultOfMethodCallIgnored"})
 public class Main {
-    public static void main(String[] args) {
-        ByteSuccinctSet set4 = ByteSuccinctSet.of("banana", "apple", "cherry", "date", "grape", "fig", "elderberry");
-        set4.iterator(true).forEachRemaining(System.out::println);
+    public static void main(String[] args) throws IOException {
+        iteratorTest(15);
     }
 
-    public static void containsTimeTest(int flag) {
-        // String[] randoms = StringGenerateUtil.readArray("C:\\Users\\huazhaoming\\Desktop\\data\\100w_en.txt");
+    public static void iteratorTest(int flag) throws IOException {
+        String[] randoms = StringGenerateUtil.randomArray(1000000, 32, 0.0f);
+        System.out.printf("Data: %s\n", sizeOf(randoms));
+        Arrays.parallelSort(randoms);
+        if ((flag & 1) > 0) {
+            Set<String> set = Arrays.stream(randoms).parallel().collect(Collectors.toSet());;
+            long now = Timer.now();
+            set.forEach(s -> {});
+            long ms = Timer.ms(now);
+            System.out.printf("%s: %dms | %s\n", set.getClass().getSimpleName(), ms, sizeOf(set));
+        }
+        if ((flag & 2) > 0) {
+            SimpleFSA fsa = new SimpleFSA(randoms);
+            long now = Timer.now();
+            BytesRefFSTEnum<Object> iter = fsa.iterator();
+            while (iter.next() != null);
+            long ms = Timer.ms(now);
+            System.out.printf("%s: %dms | %s\n", fsa.getClass().getSimpleName(), ms, sizeOf(fsa));
+        }
+        if ((flag & 4) > 0) {
+            CharSuccinctTrie cst = CharSuccinctTrie.sortedOf(randoms);
+            long now = Timer.now();
+            cst.iterator(true).forEachRemaining(s -> {});
+            long ms = Timer.ms(now);
+            System.out.printf("%s: %dms | %s\n", cst.getClass().getSimpleName(), ms, sizeOf(cst));
+        }
+        if ((flag & 8) > 0) {
+            ByteSuccinctTrie bst = ByteSuccinctTrie.of(randoms);
+            long now = Timer.now();
+            bst.iterator(true).forEachRemaining(s -> {});
+            long ms = Timer.ms(now);
+            System.out.printf("%s: %dms | %s\n", bst.getClass().getSimpleName(), ms, sizeOf(bst));
+        }
+    }
+
+    public static void containsTest(int flag) {
         String[] randoms = StringGenerateUtil.randomArray(1000000, 32, 0.0f);
         System.out.printf("Data: %s\n", sizeOf(randoms));
         Arrays.parallelSort(randoms);

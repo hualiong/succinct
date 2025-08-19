@@ -1,7 +1,9 @@
 package org.example.succinct.api;
 
 public interface SuccinctSet {
-    long size();
+    int size();
+
+    int nodeCount();
 
     default boolean contains(String key) {
         throw new UnsupportedOperationException();

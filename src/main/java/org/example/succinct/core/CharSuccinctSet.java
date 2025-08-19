@@ -91,13 +91,14 @@ public class CharSuccinctSet implements SuccinctSet {
         this.isLeaf = isLeafBuilder.build(false);
     }
 
-    public RankSelectBitSet labelBitmap() {
-        return labelBitmap;
+    @Override
+    public int size() {
+        return (int) isLeaf.oneCount();
     }
 
     @Override
-    public long size() {
-        return isLeaf.oneCount();
+    public int nodeCount() {
+        return (int) labelBitmap.oneCount();
     }
 
     @Override

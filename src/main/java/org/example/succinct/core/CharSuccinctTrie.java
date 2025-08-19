@@ -100,8 +100,13 @@ public class CharSuccinctTrie implements SuccinctTrie {
     }
 
     @Override
-    public long size() {
-        return isLeaf.oneCount();
+    public int size() {
+        return (int) isLeaf.oneCount();
+    }
+
+    @Override
+    public int nodeCount() {
+        return (int) labelBitmap.oneCount();
     }
 
     @Override

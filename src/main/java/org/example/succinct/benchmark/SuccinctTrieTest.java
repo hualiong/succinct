@@ -1,23 +1,22 @@
 package org.example.succinct.benchmark;
 
-import org.example.succinct.archive.ByteSuccinctSet3;
-import org.example.succinct.archive.CharSuccinctSet3;
+import org.example.succinct.api.SuccinctTrie;
 import org.example.succinct.common.SimpleFSA;
-import org.example.succinct.api.SuccinctSet;
-import org.example.succinct.core.*;
+import org.example.succinct.core.ByteSuccinctTrie;
+import org.example.succinct.core.CharSuccinctTrie;
 import org.example.succinct.utils.Recorder;
 import org.example.succinct.utils.StringGenerateUtil;
 import org.example.succinct.utils.Timer;
 import org.trie4j.louds.InlinedTailLOUDSTrie;
 import org.trie4j.patricia.PatriciaTrie;
 
+import java.util.Arrays;
+
 import static org.example.succinct.utils.RamUsageUtil.printSizeOf;
 import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 
-import java.util.Arrays;
-
 @SuppressWarnings("unused")
-public class SuccinctSetTest {
+public class SuccinctTrieTest {
     public static void main(String[] args) {
         containsTest(1000000);
     }
@@ -30,24 +29,16 @@ public class SuccinctSetTest {
             pTrie.insert(random);
         }
         InlinedTailLOUDSTrie trie = new InlinedTailLOUDSTrie(pTrie);
-        ByteSuccinctSet3 bss3 = ByteSuccinctSet3.of(randoms);
-        SuccinctSet bss4 = ByteSuccinctSet.of(randoms);
-        CharSuccinctSet3 css3 = CharSuccinctSet3.sortedOf(randoms);
-        SuccinctSet css4 = CharSuccinctSet.sortedOf(randoms);
+        SuccinctTrie bss4 = ByteSuccinctTrie.of(randoms);
+        SuccinctTrie css4 = CharSuccinctTrie.sortedOf(randoms);
         SimpleFSA fsa = new SimpleFSA(randoms);
         Recorder t = new Recorder();
         System.out.printf("Data: %s\n", sizeOf(randoms));
         t.multi(randoms, trie::contains);
         System.out.printf("%s: %dms | %s\n", trie.getClass().getSimpleName(), t.sum(), sizeOf(trie));
         t.reset();
-        t.multi(randoms, bss3::contains);
-        System.out.printf("%s: %dms | %s\n", bss3.getClass().getSimpleName(), t.sum(), sizeOf(bss3));
-        t.reset();
         t.multi(randoms, bss4::contains);
         System.out.printf("%s: %dms | %s\n", bss4.getClass().getSimpleName(), t.sum(), sizeOf(bss4));
-        t.reset();
-        t.multi(randoms, css3::contains);
-        System.out.printf("%s: %dms | %s\n", css3.getClass().getSimpleName(), t.sum(), sizeOf(css3));
         t.reset();
         t.multi(randoms, css4::contains);
         System.out.printf("%s: %dms | %s\n", css4.getClass().getSimpleName(), t.sum(), sizeOf(css4));
@@ -58,33 +49,27 @@ public class SuccinctSetTest {
     
     public static void getTest(int count) {
         String[] randoms = StringGenerateUtil.randomArray(count, 32, 0.0f);
-        ByteSuccinctSet bss4 = ByteSuccinctSet.of(randoms);
-        ByteSuccinctSet3 bss3 = ByteSuccinctSet3.of(randoms);
-        CharSuccinctSet css4 = CharSuccinctSet.of(randoms);
-        int size = (int) bss4.nodeCount();
+        CharSuccinctTrie cst = CharSuccinctTrie.of(randoms);
+        ByteSuccinctTrie bst = ByteSuccinctTrie.of(randoms);
+        int size = (int) bst.nodeCount();
         for (int i = 0; i < size; i++) {
-            bss4.get(i);
+            bst.get(i);
         }
         long t0 = Timer.now(); 
         for (int i = 0; i < size; i++) {
-            bss4.get(i);
+            bst.get(i);
         }
-        long t1 = Timer.now(); 
+        long t1 = Timer.now();
         for (int i = 0; i < size; i++) {
-            bss3.get(i);
-        }
-        long t2 = Timer.now(); 
-        for (int i = 0; i < size; i++) {
-            bss3.get(i);
+            cst.get(i);
         }
         long t3 = Timer.now();
         for (int i = 0; i < size; i++) {
-            css4.get(i);
+            cst.get(i);
         }
         long t4 = Timer.now();
-        System.out.printf("ByteSuccinctSet4: %dms\n", Timer.ms(t0, t1));
-        System.out.printf("ByteSuccinctSet3: %dms\n", Timer.ms(t2, t3));
-        System.out.printf("CharSuccinctSet4: %dms\n", Timer.ms(t3, t4));
+        System.out.printf("ByteSuccinctTrie: %dms\n", Timer.ms(t0, t1));
+        System.out.printf("CharSuccinctTrie: %dms\n", Timer.ms(t3, t4));
     }
 
     public static void memoryTest() {
@@ -95,8 +80,8 @@ public class SuccinctSetTest {
             pTrie.insert(random);
         }
         InlinedTailLOUDSTrie trie = new InlinedTailLOUDSTrie(pTrie);
-        ByteSuccinctSet bss = ByteSuccinctSet.of(largeRandoms);
-        CharSuccinctSet css = CharSuccinctSet.sortedOf(largeRandoms);
+        ByteSuccinctTrie bss = ByteSuccinctTrie.of(largeRandoms);
+        CharSuccinctTrie css = CharSuccinctTrie.sortedOf(largeRandoms);
         SimpleFSA fsa = new SimpleFSA(largeRandoms);
         printSizeOf(largeRandoms);
         printSizeOf(trie);

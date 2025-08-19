@@ -13,42 +13,33 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class SuccinctTrieTest {
-    private static final int COUNT = 20000;
+    private static final int COUNT = 100000;
+    private final Function<String[], SuccinctTrie> init = CharSuccinctTrie::of;
     private String[] randoms;
     private SuccinctTrie trie;
-    private SuccinctTrie trie2;
 
     @Before
     public void setUp() {
-        // 初始化测试数据
         randoms = StringGenerateUtil.randomArray(COUNT, 10, 0.5f);
-        Arrays.parallelSort(randoms);
-
-        // 初始化测试实例
-        trie = CharSuccinctTrie.sortedOf(randoms);
-        trie2 = CharSuccinctTrie.of("he", "hebo", "hello", "helloworld");
+        trie = init.apply(randoms);
     }
 
     @Test
-    public void indexTest() {
+    public void indexAndGetTest() {
         Set<String> unique = Arrays.stream(randoms).collect(Collectors.toSet());
+        int[] array = new int[trie.nodeCount()];
+        Arrays.setAll(array, i -> i);
         for (String random : randoms) {
             int index = trie.index(random);
             assertEquals(unique.contains(random), index > 0);
             assertEquals(random, trie.get(index));
+            array[index] = -1;
         }
-    }
-
-    @Test
-    public void getTest() {
-        CharSuccinctSet css = CharSuccinctSet.sortedOf(randoms);
-        long size = css.labelBitmap().oneCount();
-        for (int i = 0; i < size; i++) {
-            assertEquals(css.get(i), trie.get(i));
-        }
+        Arrays.stream(array).filter(i -> i > 0).forEach(i -> assertNull(trie.get(i)));
     }
 
     @Test
@@ -61,6 +52,7 @@ public class SuccinctTrieTest {
 
     @Test
     public void prefixesOfTest() {
+        SuccinctTrie trie2 = init.apply(new String[]{"he", "hebo", "hello", "helloworld"});
         assertFalse(trie2.prefixKeysOf("").hasNext());
         assertFalse(trie2.prefixKeysOf("h").hasNext());
 

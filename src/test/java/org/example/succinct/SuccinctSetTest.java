@@ -7,9 +7,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.util.Arrays;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class SuccinctSetTest {
@@ -19,30 +21,23 @@ public class SuccinctSetTest {
 
     @Before
     public void setUp() {
-        // 初始化测试数据
+        Function<String[], SuccinctSet> init = CharSuccinctSet::of;
         randoms = StringGenerateUtil.randomArray(COUNT, 10, 0.5f);
-        Arrays.parallelSort(randoms);
 
-        // 初始化测试实例
-        set = CharSuccinctSet.sortedOf(randoms);
+        set = init.apply(randoms);
     }
 
     @Test
-    public void indexTest() {
+    public void indexAndGetTest() {
         Set<String> unique = Arrays.stream(randoms).collect(Collectors.toSet());
+        int[] array = new int[set.nodeCount()];
+        Arrays.setAll(array, i -> i);
         for (String random : randoms) {
             int index = set.index(random);
             assertEquals(unique.contains(random), index > 0);
             assertEquals(random, set.get(index));
+            array[index] = -1;
         }
-    }
-
-    @Test
-    public void getTest() {
-        CharSuccinctSet expected = CharSuccinctSet.sortedOf(randoms);
-        long size = expected.labelBitmap().oneCount();
-        for (int i = 0; i < size; i++) {
-            assertEquals(expected.get(i), set.get(i));
-        }
+        Arrays.stream(array).filter(i -> i > 0).forEach(i -> assertNull(set.get(i)));
     }
 }

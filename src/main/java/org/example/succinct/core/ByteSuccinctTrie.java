@@ -27,23 +27,25 @@ public class ByteSuccinctTrie implements SuccinctTrie {
     private byte[] buffer = new byte[512];
 
     public static ByteSuccinctTrie of(String... keys) {
-        return ByteSuccinctTrie.of(keys, "GB18030", false);
+        return ByteSuccinctTrie.of(keys, "GB18030");
     }
 
-    public static ByteSuccinctTrie sortedOf(String... keys) {
-        return ByteSuccinctTrie.of(keys, "GB18030", true);
-    }
-
-    public static ByteSuccinctTrie of(String[] keys, String charset, boolean sorted) {
+    public static ByteSuccinctTrie of(String[] keys, String charset) {
         StringEncoder encoder = new StringEncoder(Charset.forName(charset));
-        // 按字节数组字典序排序
-        if (!sorted) {
-            Arrays.parallelSort(keys);
-        }
         byte[][] keyBytes = new byte[keys.length][];
         for (int i = 0; i < keys.length; i++) {
             keyBytes[i] = encoder.encodeToBytes(keys[i]);
         }
+        // 按字节数组字典序排序
+        Arrays.parallelSort(keyBytes, (a, b) -> {
+            int minLen = Math.min(a.length, b.length);
+            for (int i = 0; i < minLen; i++) {
+                int cmp = Byte.compare(a[i], b[i]);
+                if (cmp != 0)
+                    return cmp;
+            }
+            return a.length - b.length;
+        });
         ByteArrayList labels = new ByteArrayList();
         // TODO RankSelectBitSet4 的实际表现要比 RankSelectBitSet3 慢，需要排查原因
         RankSelectBitSet.Builder labelBitmapBuilder = new RankSelectBitSet4.Builder();
@@ -105,13 +107,14 @@ public class ByteSuccinctTrie implements SuccinctTrie {
         this.encoder = encoder;
     }
 
-    public RankSelectBitSet labelBitmap() {
-        return labelBitmap;
+    @Override
+    public int size() {
+        return (int) isLeaf.oneCount();
     }
 
     @Override
-    public long size() {
-        return isLeaf.oneCount();
+    public int nodeCount() {
+        return (int) labelBitmap.oneCount();
     }
 
     @Override
@@ -144,34 +147,18 @@ public class ByteSuccinctTrie implements SuccinctTrie {
 
     @Override
     public Iterator<String> prefixKeysOf(String str) {
-        return new Iterator<>() {
+        return new TermIterator() {
             private final byte[] bytes = encoder.encodeToBytes(str);
             private int pos = 0;
             private int layer = 0;
             private int nodeId = 0;
             private int bitmapIndex = 0;
-            private String next;
 
             {
                 advance(); // 初始化查找第一个前缀
             }
 
-            @Override
-            public boolean hasNext() {
-                return next != null;
-            }
-
-            @Override
-            public String next() {
-                if (next == null) {
-                    throw new NoSuchElementException();
-                }
-                String result = next;
-                advance();
-                return result;
-            }
-
-            private void advance() {
+            protected void advance() {
                 while (pos < bytes.length) {
                     int index = labelSearch(nodeId, bitmapIndex, bytes[pos], layer < 3);
                     if (index < 0) {
@@ -231,34 +218,18 @@ public class ByteSuccinctTrie implements SuccinctTrie {
     }
 
     private Iterator<String> traverse(int rootId) {
-        return new Iterator<>() {
+        return new TermIterator() {
             private final ByteBuffer byteBuffer = ByteBuffer.allocate(512);
             // private int layer = 0;
             private int nodeId = 0;
             private int bitmapIndex = 0;
-            private String next;
 
             {
                 byteBuffer.flip();
                 advance(); // 初始化查找第一个前缀
             }
 
-            @Override
-            public boolean hasNext() {
-                return next != null;
-            }
-
-            @Override
-            public String next() {
-                if (next == null) {
-                    throw new NoSuchElementException();
-                }
-                String result = next;
-                advance();
-                return result;
-            }
-
-            private void advance() {
+            protected void advance() {
                 // 切换写模式
                 byteBuffer.position(byteBuffer.limit());
                 byteBuffer.limit(byteBuffer.capacity());
