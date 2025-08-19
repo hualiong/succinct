@@ -171,7 +171,7 @@ public class CharSuccinctTrie implements SuccinctTrie {
     @Override
     public Iterator<String> iterator(boolean orderly) {
         if (orderly) {
-            return traverse(0);
+            return traverse(0, "");
         } else {
             return new Iterator<>() {
                 private int index = isLeaf.nextSetBit(0);
@@ -191,13 +191,19 @@ public class CharSuccinctTrie implements SuccinctTrie {
         }
     }
 
-    private Iterator<String> traverse(int rootId) {
+    @Override
+    public Iterator<String> prefixSearch(String prefix) {
+        return traverse(extract(prefix), prefix);
+    }
+
+    private Iterator<String> traverse(int rootId, String prefix) {
         return new TermIterator() {
             private final CharBuffer charBuffer = CharBuffer.allocate(256);
-            private int nodeId = 0;
-            private int bitmapIndex = 0;
+            private int nodeId = rootId;
+            private int bitmapIndex = rootId < 0 ? labelBitmap.size() : labelBitmap.select1(rootId) + 1;
 
             {
+                charBuffer.append(prefix);
                 charBuffer.flip();
                 advance();
             }

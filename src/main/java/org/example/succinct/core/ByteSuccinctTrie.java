@@ -12,7 +12,6 @@ import java.nio.charset.Charset;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 import java.util.Queue;
 
 /**
@@ -158,6 +157,7 @@ public class ByteSuccinctTrie implements SuccinctTrie {
                 advance(); // 初始化查找第一个前缀
             }
 
+            @Override
             protected void advance() {
                 while (pos < bytes.length) {
                     int index = labelSearch(nodeId, bitmapIndex, bytes[pos], layer < 3);
@@ -229,6 +229,7 @@ public class ByteSuccinctTrie implements SuccinctTrie {
                 advance(); // 初始化查找第一个前缀
             }
 
+            @Override
             protected void advance() {
                 // 切换写模式
                 byteBuffer.position(byteBuffer.limit());

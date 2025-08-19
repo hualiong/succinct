@@ -22,10 +22,20 @@ import java.util.stream.Collectors;
 
 import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 
-@SuppressWarnings({"unused", "ResultOfMethodCallIgnored"})
+@SuppressWarnings({ "unused", "ResultOfMethodCallIgnored" })
 public class Main {
     public static void main(String[] args) throws IOException {
-        iteratorTest(15);
+        CharSuccinctTrie trie = CharSuccinctTrie.of("apple",
+                "application",
+                "basketball",
+                "banana",
+                "computer",
+                "celebrity",
+                "chocolate",
+                "database",
+                "elephant",
+                "exercise");
+        trie.prefixSearch("app").forEachRemaining(System.out::println);
     }
 
     public static void iteratorTest(int flag) throws IOException {
@@ -33,9 +43,11 @@ public class Main {
         System.out.printf("Data: %s\n", sizeOf(randoms));
         Arrays.parallelSort(randoms);
         if ((flag & 1) > 0) {
-            Set<String> set = Arrays.stream(randoms).parallel().collect(Collectors.toSet());;
+            Set<String> set = Arrays.stream(randoms).parallel().collect(Collectors.toSet());
+            ;
             long now = Timer.now();
-            set.forEach(s -> {});
+            set.forEach(s -> {
+            });
             long ms = Timer.ms(now);
             System.out.printf("%s: %dms | %s\n", set.getClass().getSimpleName(), ms, sizeOf(set));
         }
@@ -43,21 +55,24 @@ public class Main {
             SimpleFSA fsa = new SimpleFSA(randoms);
             long now = Timer.now();
             BytesRefFSTEnum<Object> iter = fsa.iterator();
-            while (iter.next() != null);
+            while (iter.next() != null)
+                ;
             long ms = Timer.ms(now);
             System.out.printf("%s: %dms | %s\n", fsa.getClass().getSimpleName(), ms, sizeOf(fsa));
         }
         if ((flag & 4) > 0) {
             CharSuccinctTrie cst = CharSuccinctTrie.sortedOf(randoms);
             long now = Timer.now();
-            cst.iterator(true).forEachRemaining(s -> {});
+            cst.iterator(false).forEachRemaining(s -> {
+            });
             long ms = Timer.ms(now);
             System.out.printf("%s: %dms | %s\n", cst.getClass().getSimpleName(), ms, sizeOf(cst));
         }
         if ((flag & 8) > 0) {
             ByteSuccinctTrie bst = ByteSuccinctTrie.of(randoms);
             long now = Timer.now();
-            bst.iterator(true).forEachRemaining(s -> {});
+            bst.iterator(false).forEachRemaining(s -> {
+            });
             long ms = Timer.ms(now);
             System.out.printf("%s: %dms | %s\n", bst.getClass().getSimpleName(), ms, sizeOf(bst));
         }

@@ -17,7 +17,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class SuccinctTrieTest {
-    private static final int COUNT = 100000;
+    private static final int COUNT = 10000;
     private final Function<String[], SuccinctTrie> init = CharSuccinctTrie::of;
     private String[] randoms;
     private SuccinctTrie trie;

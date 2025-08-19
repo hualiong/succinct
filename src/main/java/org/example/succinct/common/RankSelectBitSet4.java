@@ -86,7 +86,7 @@ public class RankSelectBitSet4 implements RankSelectBitSet {
     // 从1开始
     @Override
     public int select1(int k) {
-        if (isInvalid(k, 1, oneCount)) {
+        if (k == 0 || isInvalid(k, 1, oneCount)) {
             return -1;
         }
         return (int) rankSelect.select(k - 1);
