@@ -20,29 +20,26 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
     private final RankSelectBitSet labelBitmap;
     private final RankSelectBitSet isLeaf;
     private final StringEncoder encoder;
-    private byte[] buffer = new byte[1024];
+    private byte[] buffer = new byte[512];
 
     public static ByteSuccinctSet4 of(String... keys) {
-        return ByteSuccinctSet4.of(keys, "GB18030");
+        return ByteSuccinctSet4.of(keys, "GB18030", false);
     }
 
-    public static ByteSuccinctSet4 of(String[] keys, String charset) {
-        // 转换为字节数组并排序
+    public static ByteSuccinctSet4 sortedOf(String... keys) {
+        return ByteSuccinctSet4.of(keys, "GB18030", true);
+    }
+
+    public static ByteSuccinctSet4 of(String[] keys, String charset, boolean sorted) {
         StringEncoder encoder = new StringEncoder(Charset.forName(charset));
+        // 按字节数组字典序排序
+        if (!sorted) {
+            Arrays.parallelSort(keys);
+        }
         byte[][] keyBytes = new byte[keys.length][];
         for (int i = 0; i < keys.length; i++) {
             keyBytes[i] = encoder.encodeToBytes(keys[i]);
         }
-        // 按字节数组字典序排序
-        Arrays.parallelSort(keyBytes, (a, b) -> {
-            int minLen = Math.min(a.length, b.length);
-            for (int i = 0; i < minLen; i++) {
-                int cmp = Byte.compare(a[i], b[i]);
-                if (cmp != 0)
-                    return cmp;
-            }
-            return a.length - b.length;
-        });
         ByteArrayList labels = new ByteArrayList();
         // TODO RankSelectBitSet4 的实际表现要比 RankSelectBitSet3 慢，需要排查原因
         RankSelectBitSet.Builder labelBitmapBuilder = new RankSelectBitSet4.Builder();
@@ -125,9 +122,9 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
         if (isLeaf.get(nodeId)) {
             int id = nodeId, length = 0, bitmapIndex;
             while ((bitmapIndex = labelBitmap.select0(id)) >= 0) {
-                id = labelBitmap.rank1(bitmapIndex);
+                id = bitmapIndex + 1 - id;
                 if (buffer.length < ++length) {
-                    buffer = Arrays.copyOf(buffer, length);
+                    buffer = Arrays.copyOf(buffer, buffer.length >>> 1);
                 }
                 buffer[buffer.length - length] = labels[bitmapIndex - id];
             }
@@ -185,6 +182,29 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
         };
     }
 
+    @Override
+    public Iterator<String> iterator(boolean orderly) {
+        if (orderly) {
+            return traverse(0);
+        } else {
+            return new Iterator<>() {
+                private int index = isLeaf.nextSetBit(0);
+
+                @Override
+                public boolean hasNext() {
+                    return index >= 0;
+                }
+
+                @Override
+                public String next() {
+                    String str = get(index);
+                    index = isLeaf.nextSetBit(index + 1);
+                    return str;
+                }
+            };
+        }
+    }
+
     private int extract(String key) {
         ByteBuffer buffer = encoder.encodeToBuffer(key);
         int nodeId = 0, bitmapIndex = 0, layer = 0;
@@ -199,6 +219,65 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
             bitmapIndex = labelBitmap.select1(nodeId) + 1;
         }
         return nodeId;
+    }
+
+    private Iterator<String> traverse(int rootId) {
+        return new Iterator<>() {
+            private final ByteBuffer byteBuffer = ByteBuffer.allocate(512);
+            // private int layer = 0;
+            private int nodeId = 0;
+            private int bitmapIndex = 0;
+            private String next;
+
+            {
+                byteBuffer.flip();
+                advance(); // 初始化查找第一个前缀
+            }
+
+            @Override
+            public boolean hasNext() {
+                return next != null;
+            }
+
+            @Override
+            public String next() {
+                if (next == null) {
+                    throw new NoSuchElementException();
+                }
+                String result = next;
+                advance();
+                return result;
+            }
+
+            private void advance() {
+                // 切换写模式
+                byteBuffer.position(byteBuffer.limit());
+                byteBuffer.limit(byteBuffer.capacity());
+                while (true) {
+                    // 撞墙
+                    while (bitmapIndex >= labelBitmap.size() || labelBitmap.get(bitmapIndex)) {
+                        // 到达根节点，遍历结束
+                        if (nodeId == rootId) {
+                            next = null;
+                            return;
+                        }
+                        // 回溯并向右转移
+                        bitmapIndex = labelBitmap.select0(nodeId) + 1;
+                        nodeId = bitmapIndex - nodeId;
+                        byteBuffer.position(byteBuffer.position() - 1);
+                    }
+                    byteBuffer.put(labels[bitmapIndex - nodeId]);
+                    // 向下转移
+                    nodeId = bitmapIndex + 1 - nodeId;
+                    bitmapIndex = labelBitmap.select1(nodeId) + 1;
+                    if (isLeaf.get(nodeId)) {
+                        byteBuffer.flip();
+                        next = encoder.charset().decode(byteBuffer).toString();
+                        return;
+                    }
+                }
+            }
+        };
     }
 
     /**
@@ -245,24 +324,6 @@ public class ByteSuccinctSet4 extends SuccinctSet2 {
             // System.out.println("order: " + (bitmapIndex - st + 1));
             return bitmapIndex;
         }
-    }
-
-    public Iterator<String> iterator() {
-        return new Iterator<>() {
-            private int index = isLeaf.nextSetBit(0);
-
-            @Override
-            public boolean hasNext() {
-                return index >= 0;
-            }
-
-            @Override
-            public String next() {
-                String str = get(index);
-                index = isLeaf.nextSetBit(index + 1);
-                return str;
-            }
-        };
     }
 
     @Override

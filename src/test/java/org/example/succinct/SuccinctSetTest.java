@@ -56,6 +56,18 @@ public class SuccinctSetTest {
     }
 
     @Test
+    public void dfsTest() {
+        int count = 20000;
+        String[] randoms = StringGenerateUtil.randomArray(count, 10, 0.5f);
+        Arrays.parallelSort(randoms);
+        ByteSuccinctSet4 bss4 = ByteSuccinctSet4.sortedOf(randoms);
+        Iterator<String> iterator = bss4.iterator(true);
+        for (String s : randoms) {
+            assertEquals(s, iterator.next());
+        }
+    }
+
+    @Test
     public void prefixesOfTest() {
         SuccinctSet2 set = ByteSuccinctSet4.of("he", "hebo", "hello", "helloworld");
         assertFalse(set.prefixKeysOf("").hasNext());
@@ -110,7 +122,7 @@ public class SuccinctSetTest {
             pTrie.insert(random);
         }
         InlinedTailLOUDSTrie trie = new InlinedTailLOUDSTrie(pTrie);
-        ByteSuccinctSet4 bss4 = ByteSuccinctSet4.of(randoms);
+        ByteSuccinctSet4 bss4 = ByteSuccinctSet4.sortedOf(randoms);
         CharSuccinctSet4 css4 = CharSuccinctSet4.sortedOf(randoms);
         SimpleFSA fsa = new SimpleFSA(randoms);
         RamUsageUtil.printSizeOf(randoms);

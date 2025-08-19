@@ -1,6 +1,6 @@
 package org.example;
 
-import org.apache.commons.collections4.trie.PatriciaTrie;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.example.succinct.api.SuccinctSet2;
 import org.example.succinct.core.*;
 import org.example.succinct.common.*;
@@ -11,10 +11,10 @@ import org.example.succinct.utils.StringEncoder;
 import org.example.succinct.utils.StringGenerateUtil;
 import org.example.succinct.utils.Timer;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Queue;
 import java.util.Set;
 
@@ -23,9 +23,8 @@ import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 @SuppressWarnings("unused")
 public class Main {
     public static void main(String[] args) {
-        String[] randoms = StringGenerateUtil.randomArray(1000000, 8, 1.0f);
-        SuccinctSet2 set = ByteSuccinctSet4.of(randoms);
-        System.out.println(set.contains(randoms[0]));
+        ByteSuccinctSet4 set4 = ByteSuccinctSet4.of("banana", "apple", "cherry", "date", "grape", "fig", "elderberry");
+        set4.iterator(true).forEachRemaining(System.out::println);
     }
 
     public static void containsTimeTest(int flag) {
