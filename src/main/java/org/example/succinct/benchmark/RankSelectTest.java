@@ -1,4 +1,4 @@
-package org.example.succinct.test;
+package org.example.succinct.benchmark;
 
 import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 import java.util.ArrayDeque;
@@ -18,11 +18,13 @@ import it.unimi.dsi.sux4j.bits.SimpleSelect;
 import it.unimi.dsi.sux4j.bits.SparseRank;
 import it.unimi.dsi.sux4j.bits.SparseSelect;
 import org.example.succinct.api.RankSelectBitSet;
+import org.example.succinct.archive.RankSelectBitSet3;
 import org.example.succinct.common.*;
 import org.example.succinct.utils.StringGenerateUtil;
 import org.example.succinct.utils.Timer;
 
-public class RankSelectTimeTest {
+@SuppressWarnings("unused")
+public class RankSelectTest {
     public static void main(String[] args) {
         allTest();
     }

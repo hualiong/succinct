@@ -3,7 +3,6 @@ package org.example.succinct.archive;
 import it.unimi.dsi.fastutil.chars.CharArrayList;
 import org.example.succinct.api.RankSelectBitSet;
 import org.example.succinct.common.Range;
-import org.example.succinct.common.RankSelectBitSet3;
 import org.example.succinct.utils.StringEncoder;
 
 import java.util.ArrayDeque;

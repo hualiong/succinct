@@ -1,4 +1,4 @@
-package org.example.succinct.test;
+package org.example.succinct.benchmark;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -10,7 +10,8 @@ import org.example.succinct.utils.Recorder;
 import org.example.succinct.utils.StringGenerateUtil;
 import static org.example.succinct.utils.RamUsageUtil.estimateSizeOf;
 
-public class FSTTimeTest {
+@SuppressWarnings("unused")
+public class FSTTest {
     public static void main(String[] args) {
         FSTQueryTest();
     }

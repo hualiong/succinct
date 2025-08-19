@@ -1,10 +1,11 @@
-package org.example.succinct.common;
+package org.example.succinct.archive;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.example.succinct.api.RankSelectBitSet;
 
+@SuppressWarnings("unused")
 public class RankSelectBitSet1 implements RankSelectBitSet {
     private static final int GAP = 64;
     private final long[] bits;

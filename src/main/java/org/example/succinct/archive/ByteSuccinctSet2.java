@@ -2,7 +2,6 @@ package org.example.succinct.archive;
 
 import org.example.succinct.api.RankSelectBitSet;
 import org.example.succinct.common.Range;
-import org.example.succinct.common.RankSelectBitSet3;
 
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 

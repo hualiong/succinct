@@ -1,4 +1,4 @@
-package org.example.succinct.common;
+package org.example.succinct.archive;
 
 import org.example.succinct.api.RankSelectBitSet;
 
@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.sux4j.util.EliasFanoMonotoneLongBigList;
 
+@SuppressWarnings("unused")
 public class RankSelectBitSet2 implements RankSelectBitSet {
     private final long[] bits;
     private final EliasFanoMonotoneLongBigList ranks1;

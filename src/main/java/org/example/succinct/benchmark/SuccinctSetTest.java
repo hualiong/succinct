@@ -1,4 +1,4 @@
-package org.example.succinct.test;
+package org.example.succinct.benchmark;
 
 import org.example.succinct.archive.ByteSuccinctSet3;
 import org.example.succinct.archive.CharSuccinctSet3;
@@ -11,11 +11,13 @@ import org.example.succinct.utils.Timer;
 import org.trie4j.louds.InlinedTailLOUDSTrie;
 import org.trie4j.patricia.PatriciaTrie;
 
+import static org.example.succinct.utils.RamUsageUtil.printSizeOf;
 import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 
 import java.util.Arrays;
 
-public class SuccinctSetTimeTest {
+@SuppressWarnings("unused")
+public class SuccinctSetTest {
     public static void main(String[] args) {
         containsTimeTest(1000000);
     }
@@ -87,5 +89,23 @@ public class SuccinctSetTimeTest {
         System.out.printf("ByteSuccinctSet4: %dms\n", Timer.ms(t0, t1));
         System.out.printf("ByteSuccinctSet3: %dms\n", Timer.ms(t2, t3));
         System.out.printf("CharSuccinctSet4: %dms\n", Timer.ms(t3, t4));
+    }
+
+    public static void memoryTest() {
+        String[] largeRandoms = StringGenerateUtil.randomArray(1000000, 8, 0.0f);
+        Arrays.parallelSort(largeRandoms);
+        PatriciaTrie pTrie = new PatriciaTrie();
+        for (String random : largeRandoms) {
+            pTrie.insert(random);
+        }
+        InlinedTailLOUDSTrie trie = new InlinedTailLOUDSTrie(pTrie);
+        ByteSuccinctSet bss = ByteSuccinctSet.sortedOf(largeRandoms);
+        CharSuccinctSet css = CharSuccinctSet.sortedOf(largeRandoms);
+        SimpleFSA fsa = new SimpleFSA(largeRandoms);
+        printSizeOf(largeRandoms);
+        printSizeOf(trie);
+        printSizeOf(bss);
+        printSizeOf(css);
+        printSizeOf(fsa);
     }
 }
