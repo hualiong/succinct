@@ -106,12 +106,12 @@ public class ByteSuccinctSet implements SuccinctSet {
 
     @Override
     public int size() {
-        return (int) isLeaf.oneCount();
+        return isLeaf.oneCount();
     }
 
     @Override
     public int nodeCount() {
-        return (int) labelBitmap.oneCount();
+        return labelBitmap.oneCount();
     }
 
     @Override

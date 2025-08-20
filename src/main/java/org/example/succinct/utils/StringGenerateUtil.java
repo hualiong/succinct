@@ -53,8 +53,7 @@ public class StringGenerateUtil {
     
     static {
         // 英文字符集（字母+数字+标点）
-        String engChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" +
-                         "!@#$%^&*()_+-=[]{}|;:,.<>?/`~\"'\\";
+        String engChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?/`~\"'\\";
         ENGLISH_CHARS = engChars.toCharArray();
         
         // 中文字符集（常用汉字+标点）

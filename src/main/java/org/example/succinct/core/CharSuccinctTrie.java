@@ -5,7 +5,6 @@ import org.example.succinct.api.RankSelectBitSet;
 import org.example.succinct.api.SuccinctTrie;
 import org.example.succinct.common.Range;
 import org.example.succinct.common.RankSelectBitSet4;
-import org.example.succinct.utils.StringEncoder;
 
 import java.nio.CharBuffer;
 import java.util.ArrayDeque;
@@ -18,9 +17,9 @@ import java.util.Queue;
  */
 public class CharSuccinctTrie implements SuccinctTrie {
     private final char[] labels;
-    private final char[] buffer = new char[128];
     private final RankSelectBitSet labelBitmap;
     private final RankSelectBitSet isLeaf;
+    private CharBuffer buffer = CharBuffer.allocate(128);
 
     public static CharSuccinctTrie of(String... keys) {
         return CharSuccinctTrie.of(keys, false);
@@ -40,14 +39,11 @@ public class CharSuccinctTrie implements SuccinctTrie {
 
         Queue<Range> queue = new ArrayDeque<>();
         queue.add(new Range(0, keys.length, 0));
-        int bitPos = 0;
-        int nodeId = 0;
-
+        int bitPos = 0, nodeId = 0;
+        // int temp = 0;
         while (!queue.isEmpty()) {
             Range range = queue.poll();
-            int L = range.L();
-            int R = range.R();
-            int index = range.index();
+            int L = range.L(), R = range.R(), index = range.index();
             // 检查当前节点是否是叶子节点
             boolean isLeafNode = false;
             int ptr = L;
@@ -75,15 +71,17 @@ public class CharSuccinctTrie implements SuccinctTrie {
                 // 添加子节点标签
                 labels.add(currentChar);
                 // 设置子节点标记(0)
-                labelBitmapBuilder.set(bitPos, false);
                 bitPos++;
                 // 将子节点范围加入队列
                 queue.add(new Range(start, end, index + 1));
                 start = end;
             }
             // 设置节点结束标记(1)
-            labelBitmapBuilder.set(bitPos, true);
-            bitPos++;
+            // if (bitPos - temp > 48) {
+            //     System.out.println(bitPos - temp);
+            //     temp = bitPos;
+            // }
+            labelBitmapBuilder.set(bitPos++, true);
             nodeId++;
         }
         // 转换并初始化位图
@@ -93,7 +91,7 @@ public class CharSuccinctTrie implements SuccinctTrie {
                 isLeafBuilder.build(false));
     }
 
-    public CharSuccinctTrie(char[] labels, RankSelectBitSet labelBitmap, RankSelectBitSet isLeaf) {
+    private CharSuccinctTrie(char[] labels, RankSelectBitSet labelBitmap, RankSelectBitSet isLeaf) {
         this.labels = labels;
         this.labelBitmap = labelBitmap;
         this.isLeaf = isLeaf;
@@ -101,12 +99,12 @@ public class CharSuccinctTrie implements SuccinctTrie {
 
     @Override
     public int size() {
-        return (int) isLeaf.oneCount();
+        return isLeaf.oneCount();
     }
 
     @Override
     public int nodeCount() {
-        return (int) labelBitmap.oneCount();
+        return labelBitmap.oneCount();
     }
 
     @Override
@@ -124,13 +122,18 @@ public class CharSuccinctTrie implements SuccinctTrie {
     @Override
     public String get(int nodeId) {
         if (isLeaf.get(nodeId)) {
-            StringBuilder str = new StringBuilder();
-            int bitmapIndex;
+            int bitmapIndex, cap = buffer.capacity(), length = 0;
             while ((bitmapIndex = labelBitmap.select0(nodeId)) >= 0) {
-                nodeId = labelBitmap.rank1(bitmapIndex);
-                str.append(labels[bitmapIndex - nodeId]);
+                nodeId = bitmapIndex + 1 - nodeId;
+                if (cap < ++length) {
+                    buffer.flip();
+                    buffer = CharBuffer.allocate(cap << 1).put(buffer);
+                }
+                buffer.put(cap - length, labels[bitmapIndex - nodeId]);
             }
-            return str.reverse().toString();
+            String s = new String(buffer.array(), cap - length, length);
+            buffer.clear();
+            return s;
         }
         return null;
     }
@@ -240,10 +243,11 @@ public class CharSuccinctTrie implements SuccinctTrie {
     }
 
     private int extract(String key) {
-        int length = StringEncoder.getChars(key, buffer);
+        buffer.append(key);
+        buffer.flip();
         int nodeId = 0, bitmapIndex = 0, layer = 0;
-        for (int i = 0; i < length; i++) {
-            int index = labelSearch(nodeId, bitmapIndex, buffer[i], layer < 3);
+        while (buffer.hasRemaining()) {
+            int index = labelSearch(nodeId, bitmapIndex, buffer.get(), layer < 3);
             if (index < 0) {
                 return -1;
             }
@@ -251,6 +255,7 @@ public class CharSuccinctTrie implements SuccinctTrie {
             nodeId = index + 1 - nodeId;
             bitmapIndex = labelBitmap.select1(nodeId) + 1;
         }
+        buffer.clear();
         return nodeId;
     }
 
@@ -269,6 +274,7 @@ public class CharSuccinctTrie implements SuccinctTrie {
             if (high >= labelBitmap.size() || labelBitmap.get(high)) {
                 return -1;
             }
+            System.out.println("bSearch: " + (high - bitmapIndex + 1));
             int low = bitmapIndex, mid = -1;
             while (low <= high) {
                 mid = low + high >>> 1;
@@ -283,6 +289,7 @@ public class CharSuccinctTrie implements SuccinctTrie {
             }
             return low > high ? -1 : mid;
         } else {
+            int st = bitmapIndex;
             while (true) {
                 if (bitmapIndex >= labelBitmap.size() || labelBitmap.get(bitmapIndex)) {
                     return -1;
@@ -293,6 +300,7 @@ public class CharSuccinctTrie implements SuccinctTrie {
                 }
                 bitmapIndex++;
             }
+            System.out.println("order: " + (bitmapIndex - st + 1));
             return bitmapIndex;
         }
     }

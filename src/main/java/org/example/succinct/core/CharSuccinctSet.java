@@ -93,46 +93,18 @@ public class CharSuccinctSet implements SuccinctSet {
 
     @Override
     public int size() {
-        return (int) isLeaf.oneCount();
+        return isLeaf.oneCount();
     }
 
     @Override
     public int nodeCount() {
-        return (int) labelBitmap.oneCount();
+        return labelBitmap.oneCount();
     }
 
     @Override
     public int index(String key) {
         int nodeId = extract(key);
         return nodeId >= 0 && isLeaf.get(nodeId) ? nodeId : -1;
-    }
-
-    private int extract(String key) {
-        int nodeId = 0, bitmapIndex = 0;
-        int length = StringEncoder.getChars(key, buffer);
-        for (int i = 0; i < length; i++) {
-            int low = bitmapIndex, mid = -1, high = labelBitmap.select1(nodeId + 1) - 1;
-            if (high >= labelBitmap.size() || labelBitmap.get(high)) {
-                return -1;
-            }
-            while (low <= high) {
-                mid = low + high >>> 1;
-                char label = labels[mid - nodeId];
-                if (label == buffer[i]) {
-                    break;
-                } else if (label < buffer[i]) {
-                    low = mid + 1;
-                } else {
-                    high = mid - 1;
-                }
-            }
-            if (low > high) {
-                return -1;
-            }
-            nodeId = mid + 1 - nodeId;
-            bitmapIndex = labelBitmap.select1(nodeId) + 1;
-        }
-        return nodeId;
     }
 
     @Override
@@ -153,6 +125,55 @@ public class CharSuccinctSet implements SuccinctSet {
     public boolean contains(String key) {
         int nodeId = extract(key);
         return nodeId >= 0 && isLeaf.get(nodeId);
+    }
+
+    private int extract(String key) {
+        int nodeId = 0, bitmapIndex = 0, layer = 0;
+        int length = StringEncoder.getChars(key, buffer);
+        for (int i = 0; i < length; i++) {
+            int index = labelSearch(nodeId, bitmapIndex, buffer[i], layer < 3);
+            if (index < 0) {
+                return -1;
+            }
+            layer++;
+            nodeId = index + 1 - nodeId;
+            bitmapIndex = labelBitmap.select1(nodeId) + 1;
+        }
+        return nodeId;
+    }
+
+    private int labelSearch(int nodeId, int bitmapIndex, char c, boolean bSearch) {
+        if (bSearch) {
+            int high = labelBitmap.select1(nodeId + 1) - 1;
+            if (high >= labelBitmap.size() || labelBitmap.get(high)) {
+                return -1;
+            }
+            int low = bitmapIndex, mid = -1;
+            while (low <= high) {
+                mid = low + high >>> 1;
+                char label = labels[mid - nodeId];
+                if (label == c) {
+                    break;
+                } else if (label < c) {
+                    low = mid + 1;
+                } else {
+                    high = mid - 1;
+                }
+            }
+            return low > high ? -1 : mid;
+        } else {
+            while (true) {
+                if (bitmapIndex >= labelBitmap.size() || labelBitmap.get(bitmapIndex)) {
+                    return -1;
+                }
+                int labelIndex = bitmapIndex - nodeId;
+                if (labelIndex < labels.length && labels[labelIndex] == c) {
+                    break;
+                }
+                bitmapIndex++;
+            }
+            return bitmapIndex;
+        }
     }
 
     @Override

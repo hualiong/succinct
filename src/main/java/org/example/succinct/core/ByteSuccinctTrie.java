@@ -98,7 +98,7 @@ public class ByteSuccinctTrie implements SuccinctTrie {
                 encoder);
     }
 
-    public ByteSuccinctTrie(byte[] labels, RankSelectBitSet labelBitmap, RankSelectBitSet isLeaf,
+    private ByteSuccinctTrie(byte[] labels, RankSelectBitSet labelBitmap, RankSelectBitSet isLeaf,
                             StringEncoder encoder) {
         this.labels = labels;
         this.labelBitmap = labelBitmap;
@@ -108,12 +108,12 @@ public class ByteSuccinctTrie implements SuccinctTrie {
 
     @Override
     public int size() {
-        return (int) isLeaf.oneCount();
+        return isLeaf.oneCount();
     }
 
     @Override
     public int nodeCount() {
-        return (int) labelBitmap.oneCount();
+        return labelBitmap.oneCount();
     }
 
     @Override
@@ -131,13 +131,13 @@ public class ByteSuccinctTrie implements SuccinctTrie {
     @Override
     public String get(int nodeId) {
         if (isLeaf.get(nodeId)) {
-            int id = nodeId, length = 0, bitmapIndex;
-            while ((bitmapIndex = labelBitmap.select0(id)) >= 0) {
-                id = bitmapIndex + 1 - id;
+            int length = 0, bitmapIndex;
+            while ((bitmapIndex = labelBitmap.select0(nodeId)) >= 0) {
+                nodeId = bitmapIndex + 1 - nodeId;
                 if (buffer.length < ++length) {
-                    buffer = Arrays.copyOf(buffer, buffer.length >>> 1);
+                    buffer = Arrays.copyOf(buffer, buffer.length << 1);
                 }
-                buffer[buffer.length - length] = labels[bitmapIndex - id];
+                buffer[buffer.length - length] = labels[bitmapIndex - nodeId];
             }
             return new String(buffer, buffer.length - length, length, encoder.charset());
         }
@@ -181,7 +181,7 @@ public class ByteSuccinctTrie implements SuccinctTrie {
     @Override
     public Iterator<String> iterator(boolean orderly) {
         if (orderly) {
-            return traverse(0);
+            return traverse(0, "");
         } else {
             return new Iterator<>() {
                 private int index = isLeaf.nextSetBit(0);
@@ -201,6 +201,11 @@ public class ByteSuccinctTrie implements SuccinctTrie {
         }
     }
 
+    @Override
+    public Iterator<String> prefixSearch(String prefix) {
+        return traverse(extract(prefix), prefix);
+    }
+
     private int extract(String key) {
         ByteBuffer buffer = encoder.encodeToBuffer(key);
         int nodeId = 0, bitmapIndex = 0, layer = 0;
@@ -217,14 +222,14 @@ public class ByteSuccinctTrie implements SuccinctTrie {
         return nodeId;
     }
 
-    private Iterator<String> traverse(int rootId) {
+    private Iterator<String> traverse(int rootId, String prefix) {
         return new TermIterator() {
             private final ByteBuffer byteBuffer = ByteBuffer.allocate(512);
-            // private int layer = 0;
-            private int nodeId = 0;
-            private int bitmapIndex = 0;
+            private int nodeId = rootId;
+            private int bitmapIndex = rootId < 0 ? labelBitmap.size() : labelBitmap.select1(rootId) + 1;
 
             {
+                byteBuffer.put(encoder.encodeToBytes(prefix));
                 byteBuffer.flip();
                 advance(); // 初始化查找第一个前缀
             }

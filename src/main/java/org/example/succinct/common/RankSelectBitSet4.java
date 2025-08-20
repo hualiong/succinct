@@ -13,7 +13,7 @@ import org.example.succinct.api.RankSelectBitSet;
 public class RankSelectBitSet4 implements RankSelectBitSet {
     public final BitVector bits;
     public final RankSelect rankSelect;
-    public final long oneCount;
+    public final int oneCount;
     public final int size;
 
     // 构建器模式
@@ -56,7 +56,7 @@ public class RankSelectBitSet4 implements RankSelectBitSet {
     }
 
     @Override
-    public long oneCount() {
+    public int oneCount() {
         return oneCount;
     }
 

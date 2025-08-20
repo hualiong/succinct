@@ -25,26 +25,18 @@ import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 @SuppressWarnings({ "unused", "ResultOfMethodCallIgnored" })
 public class Main {
     public static void main(String[] args) throws IOException {
-        CharSuccinctTrie trie = CharSuccinctTrie.of("apple",
-                "application",
-                "basketball",
-                "banana",
-                "computer",
-                "celebrity",
-                "chocolate",
-                "database",
-                "elephant",
-                "exercise");
-        trie.prefixSearch("app").forEachRemaining(System.out::println);
+        String[] randoms = StringGenerateUtil.randomArray(1000000, 8, 0.0f);
+        CharSuccinctTrie trie = CharSuccinctTrie.of(randoms);
+        System.out.println(trie.index(randoms[256]));
+        System.out.println(trie.nodeCount());
     }
 
     public static void iteratorTest(int flag) throws IOException {
-        String[] randoms = StringGenerateUtil.randomArray(1000000, 32, 0.0f);
+        String[] randoms = StringGenerateUtil.randomArray(1000000, 8, 1.0f);
         System.out.printf("Data: %s\n", sizeOf(randoms));
         Arrays.parallelSort(randoms);
         if ((flag & 1) > 0) {
             Set<String> set = Arrays.stream(randoms).parallel().collect(Collectors.toSet());
-            ;
             long now = Timer.now();
             set.forEach(s -> {
             });
@@ -61,17 +53,17 @@ public class Main {
             System.out.printf("%s: %dms | %s\n", fsa.getClass().getSimpleName(), ms, sizeOf(fsa));
         }
         if ((flag & 4) > 0) {
-            CharSuccinctTrie cst = CharSuccinctTrie.sortedOf(randoms);
+            SuccinctTrie cst = CharSuccinctTrie.sortedOf(randoms);
             long now = Timer.now();
-            cst.iterator(false).forEachRemaining(s -> {
+            cst.iterator(true).forEachRemaining(s -> {
             });
             long ms = Timer.ms(now);
             System.out.printf("%s: %dms | %s\n", cst.getClass().getSimpleName(), ms, sizeOf(cst));
         }
         if ((flag & 8) > 0) {
-            ByteSuccinctTrie bst = ByteSuccinctTrie.of(randoms);
+            SuccinctTrie bst = ByteSuccinctTrie.of(randoms);
             long now = Timer.now();
-            bst.iterator(false).forEachRemaining(s -> {
+            bst.iterator(true).forEachRemaining(s -> {
             });
             long ms = Timer.ms(now);
             System.out.printf("%s: %dms | %s\n", bst.getClass().getSimpleName(), ms, sizeOf(bst));

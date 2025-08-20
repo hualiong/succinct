@@ -76,7 +76,7 @@ public class RankSelectBitSet1 implements RankSelectBitSet {
     }
 
     @Override
-    public long oneCount() {
+    public int oneCount() {
         return ranks1[bits.length];
     }
 

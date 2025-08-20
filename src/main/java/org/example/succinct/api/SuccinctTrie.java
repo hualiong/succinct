@@ -8,9 +8,7 @@ public interface SuccinctTrie extends SuccinctSet {
 
     Iterator<String> prefixKeysOf(String str);
 
-    default Iterator<String> prefixSearch(String prefix) {
-        throw new UnsupportedOperationException();
-    }
+    Iterator<String> prefixSearch(String prefix);
 
     abstract class TermIterator implements Iterator<String> {
         protected String next;

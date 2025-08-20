@@ -10,7 +10,7 @@ import org.example.succinct.api.RankSelectBitSet;
 public class RankSelectBitSet3 implements RankSelectBitSet {
     private final LongArrayBitVector bits;
     private final RankSelect rankSelect;
-    public final long oneCount;
+    public final int oneCount;
     public final int size;
 
     // 构建器模式
@@ -36,7 +36,7 @@ public class RankSelectBitSet3 implements RankSelectBitSet {
         if (rankSelect) {
             SparseSelect select = new SparseSelect(this.bits);
             this.rankSelect = new RankSelect(select.getRank(), select);
-            this.oneCount = this.rankSelect.rank(size);
+            this.oneCount = (int) this.rankSelect.rank(size);
         } else {
             this.oneCount = 0;
             this.rankSelect = null;
@@ -49,7 +49,7 @@ public class RankSelectBitSet3 implements RankSelectBitSet {
     }
 
     @Override
-    public long oneCount() {
+    public int oneCount() {
         return oneCount;
     }
 
