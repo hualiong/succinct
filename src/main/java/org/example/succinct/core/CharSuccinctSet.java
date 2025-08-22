@@ -11,9 +11,6 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Queue;
 
-/**
- * 基于 char 数组实现的第四代 Succinct Set
- */
 public class CharSuccinctSet implements SuccinctSet {
     private final char[] buffer = new char[128];
     private final char[] labels;
@@ -98,12 +95,27 @@ public class CharSuccinctSet implements SuccinctSet {
 
     @Override
     public int nodeCount() {
-        return labelBitmap.oneCount();
+        return isLeaf.size();
+    }
+
+    @Override
+    public boolean contains(String key) {
+        return index(key) > 0;
     }
 
     @Override
     public int index(String key) {
-        int nodeId = extract(key);
+        int nodeId = 0, bitmapIndex = 0, layer = 0;
+        int length = StringEncoder.getChars(key, buffer);
+        for (int i = 0; i < length; i++) {
+            int index = labelSearch(nodeId, bitmapIndex, buffer[i], layer < 3);
+            if (index < 0) {
+                return -1;
+            }
+            layer++;
+            nodeId = index + 1 - nodeId;
+            bitmapIndex = labelBitmap.select1(nodeId) + 1;
+        }
         return nodeId >= 0 && isLeaf.get(nodeId) ? nodeId : -1;
     }
 
@@ -119,27 +131,6 @@ public class CharSuccinctSet implements SuccinctSet {
             return str.reverse().toString();
         }
         return null;
-    }
-
-    @Override
-    public boolean contains(String key) {
-        int nodeId = extract(key);
-        return nodeId >= 0 && isLeaf.get(nodeId);
-    }
-
-    private int extract(String key) {
-        int nodeId = 0, bitmapIndex = 0, layer = 0;
-        int length = StringEncoder.getChars(key, buffer);
-        for (int i = 0; i < length; i++) {
-            int index = labelSearch(nodeId, bitmapIndex, buffer[i], layer < 3);
-            if (index < 0) {
-                return -1;
-            }
-            layer++;
-            nodeId = index + 1 - nodeId;
-            bitmapIndex = labelBitmap.select1(nodeId) + 1;
-        }
-        return nodeId;
     }
 
     private int labelSearch(int nodeId, int bitmapIndex, char c, boolean bSearch) {
@@ -180,5 +171,4 @@ public class CharSuccinctSet implements SuccinctSet {
     public String toString() {
         return "CharSuccinctSet[" + labels.length + " labels, " + labelBitmap.size() + " bits]";
     }
-
 }

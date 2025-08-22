@@ -12,9 +12,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Queue;
 
-/**
- * 基于 char 数组实现的第四代 Succinct Set
- */
 public class CharSuccinctTrie implements SuccinctTrie {
     private final char[] labels;
     private final RankSelectBitSet labelBitmap;
@@ -104,19 +101,18 @@ public class CharSuccinctTrie implements SuccinctTrie {
 
     @Override
     public int nodeCount() {
-        return labelBitmap.oneCount();
+        return isLeaf.size();
+    }
+
+    @Override
+    public boolean contains(String key) {
+        return index(key) > 0;
     }
 
     @Override
     public int index(String key) {
         int nodeId = extract(key);
         return nodeId >= 0 && isLeaf.get(nodeId) ? nodeId : -1;
-    }
-
-    @Override
-    public boolean contains(String key) {
-        int nodeId = extract(key);
-        return nodeId >= 0 && isLeaf.get(nodeId);
     }
 
     @Override
@@ -274,7 +270,7 @@ public class CharSuccinctTrie implements SuccinctTrie {
             if (high >= labelBitmap.size() || labelBitmap.get(high)) {
                 return -1;
             }
-            System.out.println("bSearch: " + (high - bitmapIndex + 1));
+            // System.out.println("bSearch: " + (high - bitmapIndex + 1));
             int low = bitmapIndex, mid = -1;
             while (low <= high) {
                 mid = low + high >>> 1;
@@ -289,7 +285,7 @@ public class CharSuccinctTrie implements SuccinctTrie {
             }
             return low > high ? -1 : mid;
         } else {
-            int st = bitmapIndex;
+            // int st = bitmapIndex;
             while (true) {
                 if (bitmapIndex >= labelBitmap.size() || labelBitmap.get(bitmapIndex)) {
                     return -1;
@@ -300,7 +296,7 @@ public class CharSuccinctTrie implements SuccinctTrie {
                 }
                 bitmapIndex++;
             }
-            System.out.println("order: " + (bitmapIndex - st + 1));
+            // System.out.println("order: " + (bitmapIndex - st + 1));
             return bitmapIndex;
         }
     }

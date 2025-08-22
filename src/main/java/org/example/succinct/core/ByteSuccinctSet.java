@@ -12,10 +12,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.*;
 
-/**
- * 基于 byte 数组实现的第四代 Succinct Set，0标识子节点，1标识结束
- * Note: 从前缀树上看，当前标签位于弧上，归属上个节点，断言
- */
 public class ByteSuccinctSet implements SuccinctSet {
     private final byte[] labels;
     private final RankSelectBitSet labelBitmap;
@@ -111,19 +107,29 @@ public class ByteSuccinctSet implements SuccinctSet {
 
     @Override
     public int nodeCount() {
-        return labelBitmap.oneCount();
-    }
-
-    @Override
-    public int index(String key) {
-        int nodeId = extract(key);
-        return nodeId >= 0 && isLeaf.get(nodeId) ? nodeId : -1;
+        return isLeaf.size();
     }
 
     @Override
     public boolean contains(String key) {
-        int nodeId = extract(key);
-        return nodeId >= 0 && isLeaf.get(nodeId);
+        return index(key) > 0;
+    }
+
+    @Override
+    public int index(String key) {
+        ByteBuffer buffer = encoder.encodeToBuffer(key);
+        int nodeId = 0, bitmapIndex = 0, layer = 0;
+        buffer.rewind();
+        while (buffer.hasRemaining()) {
+            int index = labelSearch(nodeId, bitmapIndex, buffer.get(), layer < 3);
+            if (index < 0) {
+                return -1;
+            }
+            layer++;
+            nodeId = index + 1 - nodeId;
+            bitmapIndex = labelBitmap.select1(nodeId) + 1;
+        }
+        return nodeId >= 0 && isLeaf.get(nodeId) ? nodeId : -1;
     }
 
     @Override
@@ -140,22 +146,6 @@ public class ByteSuccinctSet implements SuccinctSet {
             return new String(buffer, buffer.length - length, length, encoder.charset());
         }
         return null;
-    }
-
-    private int extract(String key) {
-        ByteBuffer buffer = encoder.encodeToBuffer(key);
-        int nodeId = 0, bitmapIndex = 0, layer = 0;
-        buffer.rewind();
-        while (buffer.hasRemaining()) {
-            int index = labelSearch(nodeId, bitmapIndex, buffer.get(), layer < 3);
-            if (index < 0) {
-                return -1;
-            }
-            layer++;
-            nodeId = index + 1 - nodeId;
-            bitmapIndex = labelBitmap.select1(nodeId) + 1;
-        }
-        return nodeId;
     }
 
     /**

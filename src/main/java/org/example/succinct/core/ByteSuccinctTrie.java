@@ -14,10 +14,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Queue;
 
-/**
- * 基于 byte 数组实现的第四代 Succinct Set，0标识子节点，1标识结束
- * Note: 从前缀树上看，当前标签位于弧上，归属上个节点，断言
- */
 public class ByteSuccinctTrie implements SuccinctTrie {
     private final byte[] labels;
     private final RankSelectBitSet labelBitmap;
@@ -113,19 +109,18 @@ public class ByteSuccinctTrie implements SuccinctTrie {
 
     @Override
     public int nodeCount() {
-        return labelBitmap.oneCount();
+        return isLeaf.size();
+    }
+
+    @Override
+    public boolean contains(String key) {
+        return index(key) > 0;
     }
 
     @Override
     public int index(String key) {
         int nodeId = extract(key);
         return nodeId >= 0 && isLeaf.get(nodeId) ? nodeId : -1;
-    }
-
-    @Override
-    public boolean contains(String key) {
-        int nodeId = extract(key);
-        return nodeId >= 0 && isLeaf.get(nodeId);
     }
 
     @Override
