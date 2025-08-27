@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -20,17 +21,19 @@ public class SuccinctTrieTest {
     private static final int COUNT = 10000;
     private final Function<String[], SuccinctTrie> init = CharSuccinctTrie::of;
     private String[] randoms;
+    private Set<String> unique = new TreeSet<>();
     private SuccinctTrie trie;
 
     @Before
     public void setUp() {
         randoms = StringGenerateUtil.randomArray(COUNT, 10, 0.5f);
+        unique = new TreeSet<>();
+        unique.addAll(Arrays.asList(randoms));
         trie = init.apply(randoms);
     }
 
     @Test
     public void indexAndGetTest() {
-        Set<String> unique = Arrays.stream(randoms).collect(Collectors.toSet());
         int[] array = new int[trie.nodeCount()];
         Arrays.setAll(array, i -> i);
         for (String random : randoms) {
@@ -46,7 +49,7 @@ public class SuccinctTrieTest {
     public void dfsTest() {
         if (!(trie instanceof ByteSuccinctTrie)) {
             Iterator<String> iterator = trie.iterator(true);
-            for (String s : randoms) {
+            for (String s : unique) {
                 assertEquals(s, iterator.next());
             }
         }
