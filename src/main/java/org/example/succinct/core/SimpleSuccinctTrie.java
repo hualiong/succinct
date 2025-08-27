@@ -10,11 +10,11 @@ public class SimpleSuccinctTrie implements SuccinctTrie {
     private final BitVector labelBitmap; // 存储 LOUDS 编码的位向量
     private final BitVector isLeaf;      // 存储所有叶子节点标记的位向量
 
-    public static SuccinctTrie of(String... keys) {
-        return new SuccinctTrie(keys);
+    public static SimpleSuccinctTrie of(String... keys) {
+        return new SimpleSuccinctTrie(keys);
     }
 
-    private SuccinctTrie(String[] keys) {
+    private SimpleSuccinctTrie(String[] keys) {
         for (int i = 1; i < keys.length; i++) {
             assert keys[i].compareTo(keys[i - 1]) >= 0 : "The inputs are not ordered!";
         }
