@@ -10,12 +10,14 @@ public class SimpleSuccinctTrie implements SuccinctTrie {
     private final BitVector labelBitmap; // 存储 LOUDS 编码的位向量
     private final BitVector isLeaf;      // 存储所有叶子节点标记的位向量
 
-    public static SimpleSuccinctTrie of(String... keys) {
-        return new SimpleSuccinctTrie(keys);
+    public static SuccinctTrie of(String... keys) {
+        return new SuccinctTrie(keys);
     }
 
-    private SimpleSuccinctTrie(String[] keys) {
-        Arrays.parallelSort(keys);
+    private SuccinctTrie(String[] keys) {
+        for (int i = 1; i < keys.length; i++) {
+            assert keys[i].compareTo(keys[i - 1]) >= 0 : "The inputs are not ordered!";
+        }
         List<Character> labelsList = new ArrayList<>();
         BitVector.Builder labelBitmapBuilder = new BitVector.Builder();
         BitVector.Builder isLeafBuilder = new BitVector.Builder();
@@ -23,17 +25,10 @@ public class SimpleSuccinctTrie implements SuccinctTrie {
         Queue<Range> queue = new ArrayDeque<>();
         queue.add(new Range(0, keys.length, 0));
         int bitPos = 0, nodeId = 0;
-
         while (!queue.isEmpty()) {
             Range range = queue.poll();
             int L = range.L, R = range.R, index = range.index;
-            boolean isLeafNode = false;
-            int ptr = L;
-            while (ptr < R && keys[ptr].length() == index) {
-                isLeafNode = true;
-                ptr++;
-            }
-            isLeafBuilder.set(nodeId, isLeafNode);
+            isLeafBuilder.set(nodeId, keys[L].length() == index);
             // 处理子节点
             int start = L;
             while (start < R) {
@@ -93,7 +88,7 @@ public class SimpleSuccinctTrie implements SuccinctTrie {
      * @return 是否存在
      */
     public boolean contains(String key) {
-        return index(key) > 0;
+        return index(key) >= 0;
     }
 
     /**
@@ -172,6 +167,7 @@ public class SimpleSuccinctTrie implements SuccinctTrie {
                 advance(); // 初始化查找第一个前缀
             }
 
+            @Override
             public void advance() {
                 while (pos < chars.length) {
                     int index = labelSearch(nodeId, bitmapIndex, chars[pos]);
@@ -223,9 +219,12 @@ public class SimpleSuccinctTrie implements SuccinctTrie {
             {
                 charBuffer.append(prefix);
                 charBuffer.flip();
-                advance();
+                if (!isLeaf.get(rootId)) {
+                    advance();
+                }
             }
 
+            @Override
             public void advance() {
                 // 切换写模式
                 charBuffer.position(charBuffer.limit());
@@ -285,7 +284,7 @@ public class SimpleSuccinctTrie implements SuccinctTrie {
 
     // 词项迭代器
     private abstract static class TermIterator implements Iterator<String> {
-        String next;
+        String next = "";
 
         @Override
         public boolean hasNext() {
@@ -309,7 +308,7 @@ public class SimpleSuccinctTrie implements SuccinctTrie {
     public static class BitVector {
         /**
          * 数值越小，selects 预计算的间距越小，占用更高，select1 的性能越好
-         * 经测试，设为 1 或 2 时，性能提升明显，但占用极大，其余数值影响不大
+         * 经测试，设为 1 或 2 时，性能提升明显，但占用极高，其余数值影响不大
          */
         private static final int GAP = 64;
 
@@ -475,7 +474,7 @@ public class SimpleSuccinctTrie implements SuccinctTrie {
             return pos + 1 - rank1(pos);
         }
 
-        // 性能差
+        // 性能极差
         public int select0(int k) {
             if (k <= 0 || k > ranks[bits.length]) {
                 return -1;
