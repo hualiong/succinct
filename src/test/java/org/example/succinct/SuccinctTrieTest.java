@@ -15,21 +15,21 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class SuccinctTrieTest {
     private static final int COUNT = 10000;
-    private final Function<String[], SuccinctTrie> init = CharSuccinctTrie::of;
+    private final Function<String[], SuccinctTrie> constructor = ByteSuccinctTrie::of;
     private String[] randoms;
     private Set<String> unique = new TreeSet<>();
     private SuccinctTrie trie;
 
     @Before
     public void setUp() {
-        randoms = StringGenerateUtil.randomArray(COUNT, 10, 0.5f);
+        randoms = StringGenerateUtil.randomArray(COUNT, 0, 10, 0.5f);
+        Arrays.parallelSort(randoms);
         unique = new TreeSet<>();
         unique.addAll(Arrays.asList(randoms));
-        trie = init.apply(randoms);
+        trie = constructor.apply(randoms);
     }
 
     @Test
@@ -38,7 +38,7 @@ public class SuccinctTrieTest {
         Arrays.setAll(array, i -> i);
         for (String random : randoms) {
             int index = trie.index(random);
-            assertEquals(unique.contains(random), index > 0);
+            assertEquals(unique.contains(random), index >= 0);
             assertEquals(random, trie.get(index));
             array[index] = -1;
         }
@@ -57,7 +57,7 @@ public class SuccinctTrieTest {
 
     @Test
     public void prefixesOfTest() {
-        SuccinctTrie trie2 = init.apply(new String[]{"he", "hebo", "hello", "helloworld"});
+        SuccinctTrie trie2 = constructor.apply(new String[]{"he", "hebo", "hello", "helloworld"});
         assertFalse(trie2.prefixKeysOf("").hasNext());
         assertFalse(trie2.prefixKeysOf("h").hasNext());
 

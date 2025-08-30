@@ -106,7 +106,7 @@ public class CharSuccinctTrie implements SuccinctTrie {
 
     @Override
     public boolean contains(String key) {
-        return index(key) > 0;
+        return index(key) >= 0;
     }
 
     @Override
@@ -204,9 +204,12 @@ public class CharSuccinctTrie implements SuccinctTrie {
             {
                 charBuffer.append(prefix);
                 charBuffer.flip();
-                advance();
+                if (!isLeaf.get(rootId)) {
+                    advance();
+                }
             }
 
+            @Override
             protected void advance() {
                 // 切换写模式
                 charBuffer.position(charBuffer.limit());

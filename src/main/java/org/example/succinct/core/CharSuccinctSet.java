@@ -100,7 +100,7 @@ public class CharSuccinctSet implements SuccinctSet {
 
     @Override
     public boolean contains(String key) {
-        return index(key) > 0;
+        return index(key) >= 0;
     }
 
     @Override

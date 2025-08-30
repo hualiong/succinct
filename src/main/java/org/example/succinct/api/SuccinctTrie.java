@@ -11,7 +11,7 @@ public interface SuccinctTrie extends SuccinctSet {
     Iterator<String> prefixSearch(String prefix);
 
     abstract class TermIterator implements Iterator<String> {
-        protected String next;
+        protected String next = "";
 
         @Override
         public boolean hasNext() {

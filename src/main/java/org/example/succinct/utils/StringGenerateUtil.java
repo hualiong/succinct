@@ -3,11 +3,8 @@ package org.example.succinct.utils;
 import org.apache.commons.lang3.RandomStringUtils;
 
 import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -17,39 +14,12 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 public class StringGenerateUtil {
-    public static byte[] compress(String str) {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        try (GZIPOutputStream gzip = new GZIPOutputStream(bos)) {
-            gzip.write(str.getBytes(StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            return str.getBytes(StandardCharsets.UTF_8);
-        }
-        return bos.toByteArray();
-    }
-
-    // 解压
-    public static String decompress(byte[] bytes) {
-        ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        try (GZIPInputStream gzip = new GZIPInputStream(bis)) {
-            byte[] buffer = new byte[1024];
-            int len;
-            while ((len = gzip.read(buffer)) > 0) {
-                bos.write(buffer, 0, len);
-            }
-        } catch (IOException e) {
-            return new String(bytes, StandardCharsets.UTF_8);
-        }
-        return bos.toString(StandardCharsets.UTF_8);
-    }
-
     // 预定义字符集
     private static final char[] ENGLISH_CHARS;
     private static final char[] CHINESE_CHARS;
+    private static final Random random = new Random();
     
     static {
         // 英文字符集（字母+数字+标点）
@@ -76,7 +46,6 @@ public class StringGenerateUtil {
             throw new IllegalArgumentException("中文比例必须在0-1之间");
         }
         
-        Random random = new Random();
         StringBuilder sb = new StringBuilder(length);
         
         for (int i = 0; i < length; i++) {
@@ -102,34 +71,41 @@ public class StringGenerateUtil {
      * @return 随机比例的字符串
      */
     public static String randomString(int length, float minRatio, float maxRatio) {
-        Random random = new Random();
         float ratio = minRatio + random.nextFloat() * (maxRatio - minRatio);
         return balancedString(length, ratio);
     }
 
     public static String[] randomArray(int count, int len, boolean ascii) {
         RandomStringUtils secure = RandomStringUtils.secure();
-        String[] randoms = new String[count];
+        String[] array = new String[count];
         for (int i = 0; i < count; i++) {
-            randoms[i] = ascii ? secure.nextAscii(len) : secure.next(len);
+            array[i] = ascii ? secure.nextAscii(len) : secure.next(len);
         }
-        return randoms;
+        return array;
     }
 
     public static String[] randomArray(int size, int length, float chineseRatio) {
-        String[] random = new String[size];
+        String[] array = new String[size];
         while (size-- > 0) {
-            random[size] = balancedString(length, chineseRatio);
+            array[size] = balancedString(length, chineseRatio);
         }
-        return random;
+        return array;
+    }
+    
+    public static String[] randomArray(int size, int minLen, int maxLen, float chineseRatio) {
+        String[] array = new String[size];
+        while (size-- > 0) {
+            array[size] = balancedString(random.nextInt(minLen, maxLen + 1), chineseRatio);
+        }
+        return array;
     }
 
     public static String[] randomUUID(int count) {
-        String[] randoms = new String[count];
+        String[] array = new String[count];
         for (int i = 0; i < count; i++) {
-            randoms[i] = UUID.randomUUID().toString();
+            array[i] = UUID.randomUUID().toString();
         }
-        return randoms;
+        return array;
     }
 
     public static String[] readArray(String filePath) {
@@ -171,13 +147,12 @@ public class StringGenerateUtil {
     }
 
     public static void main(String[] args) {
-        String[] randoms = randomArray(10000000, 5, 1.0f);
-        Arrays.parallelSort(randoms);
-        Random random = new Random();
-        for (int i = 0; i < randoms.length; i++) {
-            randoms[i] += " " + random.nextInt(1, randoms.length + 1);
+        String[] array = randomArray(10000000, 5, 1.0f);
+        Arrays.parallelSort(array);
+        for (int i = 0; i < array.length; i++) {
+            array[i] += " " + random.nextInt(1, array.length + 1);
         }
-        writeToFile(randoms, "C:\\Users\\huazhaoming\\Desktop\\data\\1000w_cn_kv.txt");
+        writeToFile(array, "C:\\Users\\huazhaoming\\Desktop\\data\\1000w_cn_kv.txt");
     }
     
     // 常用汉字集合（2500个最常用汉字）

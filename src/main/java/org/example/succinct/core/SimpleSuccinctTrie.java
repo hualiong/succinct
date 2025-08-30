@@ -225,7 +225,7 @@ public class SimpleSuccinctTrie implements SuccinctTrie {
             }
 
             @Override
-            public void advance() {
+            protected void advance() {
                 // 切换写模式
                 charBuffer.position(charBuffer.limit());
                 charBuffer.limit(charBuffer.capacity());

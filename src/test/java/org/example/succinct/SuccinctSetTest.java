@@ -21,8 +21,8 @@ public class SuccinctSetTest {
 
     @Before
     public void setUp() {
-        Function<String[], SuccinctSet> init = CharSuccinctSet::of;
-        randoms = StringGenerateUtil.randomArray(COUNT, 10, 0.5f);
+        Function<String[], SuccinctSet> init = ByteSuccinctSet::of;
+        randoms = StringGenerateUtil.randomArray(COUNT, 0, 10, 0.5f);
 
         set = init.apply(randoms);
     }
@@ -34,7 +34,7 @@ public class SuccinctSetTest {
         Arrays.setAll(array, i -> i);
         for (String random : randoms) {
             int index = set.index(random);
-            assertEquals(unique.contains(random), index > 0);
+            assertEquals(unique.contains(random), index >= 0);
             assertEquals(random, set.get(index));
             array[index] = -1;
         }

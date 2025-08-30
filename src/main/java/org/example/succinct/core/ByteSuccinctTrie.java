@@ -114,7 +114,7 @@ public class ByteSuccinctTrie implements SuccinctTrie {
 
     @Override
     public boolean contains(String key) {
-        return index(key) > 0;
+        return index(key) >= 0;
     }
 
     @Override
@@ -226,7 +226,9 @@ public class ByteSuccinctTrie implements SuccinctTrie {
             {
                 byteBuffer.put(encoder.encodeToBytes(prefix));
                 byteBuffer.flip();
-                advance(); // 初始化查找第一个前缀
+                if (!isLeaf.get(rootId)) {
+                    advance();
+                }
             }
 
             @Override
