@@ -18,25 +18,24 @@ import java.util.function.Function;
 
 public class SuccinctTrieTest {
     private static final int COUNT = 10000;
-    private final Function<String[], SuccinctTrie> constructor = ByteSuccinctTrie::of;
-    private String[] randoms;
+    private final Function<String[], SuccinctTrie> constructor = CharSuccinctTrie2::of;
+    private String[] unordered;
     private Set<String> unique = new TreeSet<>();
     private SuccinctTrie trie;
 
     @Before
     public void setUp() {
-        randoms = StringGenerateUtil.randomArray(COUNT, 0, 10, 0.5f);
-        Arrays.parallelSort(randoms);
+        unordered = StringGenerateUtil.randomArray(COUNT, 0, 10, 0.5f);
         unique = new TreeSet<>();
-        unique.addAll(Arrays.asList(randoms));
-        trie = constructor.apply(randoms);
+        unique.addAll(Arrays.asList(unordered));
+        trie = constructor.apply(unordered);
     }
 
     @Test
     public void indexAndGetTest() {
         int[] array = new int[trie.nodeCount()];
         Arrays.setAll(array, i -> i);
-        for (String random : randoms) {
+        for (String random : unordered) {
             int index = trie.index(random);
             assertEquals(unique.contains(random), index >= 0);
             assertEquals(random, trie.get(index));

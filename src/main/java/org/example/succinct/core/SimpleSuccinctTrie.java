@@ -33,16 +33,13 @@ public class SimpleSuccinctTrie implements SuccinctTrie {
             int start = L;
             while (start < R) {
                 // 跳过长度不足的键
-                if (keys[start].length() <= index) {
+                if (keys[start].length() == index) {
                     start++;
                     continue;
                 }
                 char currentChar = keys[start].charAt(index);
                 int end = start + 1;
-                while (end < R) {
-                    if (keys[end].length() <= index || keys[end].charAt(index) != currentChar) {
-                        break;
-                    }
+                while (end < R && keys[end].charAt(index) == currentChar) {
                     end++;
                 }
                 // 添加子节点标签

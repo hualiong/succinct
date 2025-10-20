@@ -5,31 +5,34 @@ import org.example.succinct.api.RankSelectBitSet;
 import org.example.succinct.api.SuccinctTrie;
 import org.example.succinct.common.Range;
 import org.example.succinct.common.RankSelectBitSet4;
+import org.example.succinct.utils.UniqueSort;
 
 import java.nio.CharBuffer;
 import java.util.ArrayDeque;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Queue;
 
-public class CharSuccinctTrie implements SuccinctTrie {
+public class CharSuccinctTrie2 implements SuccinctTrie {
     private final char[] labels;
     private final RankSelectBitSet labelBitmap;
     private final RankSelectBitSet isLeaf;
     private CharBuffer buffer = CharBuffer.allocate(128);
 
-    public static CharSuccinctTrie of(String... keys) {
-        Arrays.sort(keys);
-        return CharSuccinctTrie.sortedOf(keys);
+    public static CharSuccinctTrie2 of(String... keys) {
+        return CharSuccinctTrie2.of(keys, UniqueSort.sort(keys));
     }
 
-    public static CharSuccinctTrie sortedOf(String... keys) {
+    public static CharSuccinctTrie2 uniqueAndSortedOf(String... keys) {
+        return CharSuccinctTrie2.of(keys, keys.length);
+    }
+
+    public static CharSuccinctTrie2 of(String[] keys, int length) {
         CharArrayList labels = new CharArrayList();
         RankSelectBitSet.Builder labelBitmapBuilder = new RankSelectBitSet4.Builder();
         RankSelectBitSet.Builder isLeafBuilder = new RankSelectBitSet4.Builder();
 
-        Queue<Range> queue = new ArrayDeque<>(16);
-        queue.add(new Range(0, keys.length, 0));
+        Queue<Range> queue = new ArrayDeque<>(length);
+        queue.add(new Range(0, length, 0));
         int bitPos = 0, nodeId = 0;
         // int temp = 0;
         while (!queue.isEmpty()) {
@@ -39,6 +42,7 @@ public class CharSuccinctTrie implements SuccinctTrie {
             if (keys[L].length() == index) {
                 isLeafBuilder.set(nodeId, true);
                 while (++L < R && keys[L].length() == index);
+                // L++;
             }
             // 处理子节点
             int start = L;
@@ -65,13 +69,13 @@ public class CharSuccinctTrie implements SuccinctTrie {
             nodeId++;
         }
         // 转换并初始化位图
-        return new CharSuccinctTrie(
+        return new CharSuccinctTrie2(
                 labels.toCharArray(),
                 labelBitmapBuilder.build(true),
                 isLeafBuilder.build(false));
     }
 
-    private CharSuccinctTrie(char[] labels, RankSelectBitSet labelBitmap, RankSelectBitSet isLeaf) {
+    private CharSuccinctTrie2(char[] labels, RankSelectBitSet labelBitmap, RankSelectBitSet isLeaf) {
         this.labels = labels;
         this.labelBitmap = labelBitmap;
         this.isLeaf = isLeaf;
