@@ -3,78 +3,127 @@ package org.example.succinct.core;
 import it.unimi.dsi.fastutil.chars.CharArrayList;
 import org.example.succinct.api.RankSelectBitSet;
 import org.example.succinct.api.SuccinctTrie;
-import org.example.succinct.common.Range;
 import org.example.succinct.common.RankSelectBitSet4;
 
 import java.nio.CharBuffer;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Queue;
 
 public class CharSuccinctTrie implements SuccinctTrie {
     private final char[] labels;
     private final RankSelectBitSet labelBitmap;
     private final RankSelectBitSet isLeaf;
+    private final RankSelectBitSet isLink;
+    private final CharSuccinctTrie subTrie;
     private CharBuffer buffer = CharBuffer.allocate(128);
+
+    private record Range(int L, int R, int index, boolean nested) {}
 
     public static CharSuccinctTrie of(String... keys) {
         Arrays.sort(keys);
         return CharSuccinctTrie.sortedOf(keys);
     }
-
+    
+    public static CharSuccinctTrie of(String[] keys, int level) {
+        Arrays.sort(keys);
+        return CharSuccinctTrie.sortedOf(keys, level);
+    }
+    
     public static CharSuccinctTrie sortedOf(String... keys) {
-        CharArrayList labels = new CharArrayList();
+        return CharSuccinctTrie.sortedOf(keys, 4);
+    }
+
+    public static CharSuccinctTrie sortedOf(String[] keys, int level) {
+        CharArrayList charArray = new CharArrayList();
         RankSelectBitSet.Builder labelBitmapBuilder = new RankSelectBitSet4.Builder();
         RankSelectBitSet.Builder isLeafBuilder = new RankSelectBitSet4.Builder();
+        RankSelectBitSet.Builder isLinkBuilder = level > 0 ? new RankSelectBitSet4.Builder() : null;
 
-        Queue<Range> queue = new ArrayDeque<>(16);
-        queue.add(new Range(0, keys.length, 0));
+        Queue<Range> queue = new ArrayDeque<>(keys.length);
+        List<String> compress = new ArrayList<>();
+        queue.add(new Range(0, keys.length, 0, false));
         int bitPos = 0, nodeId = 0;
-        // int temp = 0;
         while (!queue.isEmpty()) {
             Range range = queue.poll();
             int L = range.L(), R = range.R(), index = range.index();
             // 检查当前节点是否是叶子节点并跳过重复字符串（最短的一定是第一个）
-            if (keys[L].length() == index) {
-                isLeafBuilder.set(nodeId, true);
-                while (++L < R && keys[L].length() == index);
-            }
-            // 处理子节点
-            int start = L;
-            while (start < R) {
-                char currentChar = keys[start].charAt(index);
-                int end = start + 1;
-                while (end < R && keys[end].charAt(index) == currentChar) {
-                    end++;
-                }
-                // 添加子节点标签
-                labels.add(currentChar);
-                // 设置子节点标记(0)
+            if (range.nested() && level > 0) {
+                isLinkBuilder.set(nodeId, true);
                 bitPos++;
-                // 将子节点范围加入队列
-                queue.add(new Range(start, end, index + 1));
-                start = end;
+                charArray.add(keys[L].charAt(index));
+                int offset = 1;
+                for (int next = index + 1; keys[L].length() > next; offset++, next++) {
+                    int i = L + 1;
+                    char nextChar = keys[L].charAt(next);
+                    while (i < R && keys[i].charAt(next) == nextChar) i++;
+                    if (i != R) break;
+                }
+                compress.add(new StringBuilder(keys[L].substring(index - 1, index + offset)).reverse().toString());
+                queue.add(new Range(L, R, index + offset, false));
+            } else {
+                if (keys[L].length() == index) {
+                    isLeafBuilder.set(nodeId, true);
+                    while (++L < R && keys[L].length() == index);
+                }
+                // 处理子节点
+                int start = L;
+                while (start < R) {
+                    boolean marked = false;
+                    int end = start + 1;
+                    char currentChar = keys[start].charAt(index);
+                    while (end < R && keys[end].charAt(index) == currentChar) end++;
+                    // 判断无值
+                    if (keys[start].length() > index + 1 && level > 0) {
+                        int next = index + 1, i = start + 1;
+                        char nextChar = keys[start].charAt(next);
+                        while (i < end && keys[i].charAt(next) == nextChar) i++;
+                        marked = i == end; // 仅有一个子节点
+                    }
+                    bitPos++; // 设置子节点标记(0)
+                    charArray.add(currentChar); // 添加子节点标签
+                    queue.add(new Range(start, end, index + 1, marked)); // 将子节点范围加入队列
+                    start = end;
+                }
             }
-            // if (bitPos - temp > 48) {
-            //     System.out.println(bitPos - temp);
-            //     temp = bitPos;
-            // }
-            // 设置节点结束标记(1)
-            labelBitmapBuilder.set(bitPos++, true);
+            labelBitmapBuilder.set(bitPos++, true); // 设置节点结束标记(1)
             nodeId++;
+        }
+        RankSelectBitSet isLink = null;
+        CharSuccinctTrie subTrie = null;
+        char[] labels = charArray.toCharArray();
+        RankSelectBitSet labelBitmap = labelBitmapBuilder.build(true);
+        if (level > 0) {
+            isLink = isLinkBuilder.build(false);
+            subTrie = CharSuccinctTrie.of(compress.toArray(new String[0]), level - 1);
+            int node = 0;
+            Iterator<String> iter = compress.iterator();
+            while ((node = isLink.nextSetBit(node)) >= 0) {
+                int parentIndex = labelBitmap.select0(node);
+                int nodeIndex = labelBitmap.select1(node);
+                int parentNode = nodeIndex + 1 - node;
+                int subTrieNodeId = subTrie.index(iter.next());
+                labels[parentIndex - parentNode] = (char) (subTrieNodeId >>> 16);
+                labels[nodeIndex - node] = (char) (subTrieNodeId & 0xFFFF);
+            }
         }
         // 转换并初始化位图
         return new CharSuccinctTrie(
-                labels.toCharArray(),
-                labelBitmapBuilder.build(true),
-                isLeafBuilder.build(false));
+                labels,
+                labelBitmap,
+                isLeafBuilder.build(false),
+                isLink, subTrie);
     }
 
-    private CharSuccinctTrie(char[] labels, RankSelectBitSet labelBitmap, RankSelectBitSet isLeaf) {
+    private CharSuccinctTrie(char[] labels, RankSelectBitSet labelBitmap, RankSelectBitSet isLeaf, RankSelectBitSet isLink, CharSuccinctTrie trie) {
         this.labels = labels;
         this.labelBitmap = labelBitmap;
         this.isLeaf = isLeaf;
+        this.isLink = isLink;
+        this.subTrie = trie;
     }
 
     @Override

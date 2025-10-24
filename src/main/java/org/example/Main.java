@@ -22,12 +22,10 @@ import java.util.stream.Collectors;
 
 import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 
-@SuppressWarnings({ "unused", "ResultOfMethodCallIgnored" })
+@SuppressWarnings({ "ResultOfMethodCallIgnored" })
 public class Main {
     public static void main(String[] args) throws IOException {
-        String[] randoms = StringGenerateUtil.randomArray(1000000, 8, 0.0f);
-        CharSuccinctTrie trie = CharSuccinctTrie.of(randoms);
-        System.out.println(trie.index(randoms[256]));
+        CharSuccinctTrie trie = CharSuccinctTrie.of("romane", "romae", "rubic", "ruben");
         System.out.println(trie.nodeCount());
     }
 
