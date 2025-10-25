@@ -33,9 +33,8 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
 
         Queue<Range> queue = new ArrayDeque<>(length);
         queue.add(new Range(0, length, 0));
-        int bitPos = 0, nodeId = 0;
         // int temp = 0;
-        while (!queue.isEmpty()) {
+        for (int bitPos = 0, nodeId = 0; !queue.isEmpty(); nodeId++) {
             Range range = queue.poll();
             int L = range.L(), R = range.R(), index = range.index();
             // 检查当前节点是否是叶子节点并跳过重复字符串（最短的一定是第一个）
@@ -66,7 +65,6 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
             // }
             // 设置节点结束标记(1)
             labelBitmapBuilder.set(bitPos++, true);
-            nodeId++;
         }
         // 转换并初始化位图
         return new CharSuccinctTrie2(

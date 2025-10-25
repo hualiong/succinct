@@ -25,7 +25,8 @@ import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 @SuppressWarnings({ "ResultOfMethodCallIgnored" })
 public class Main {
     public static void main(String[] args) throws IOException {
-        CharSuccinctTrie trie = CharSuccinctTrie.of("romane", "romae", "rubic", "ruben");
+        String[] keys = new String[] {"ro", "ro", "romane", "romane", "romae", "rubic", "ruben"};
+        NestedSuccinctTrie trie = NestedSuccinctTrie.of(keys, 2);
         System.out.println(trie.nodeCount());
     }
 
