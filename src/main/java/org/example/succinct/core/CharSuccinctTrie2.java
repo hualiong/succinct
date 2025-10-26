@@ -105,12 +105,12 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
         if (isLeaf.get(nodeId)) {
             int bitmapIndex, cap = buffer.capacity(), length = 0;
             while ((bitmapIndex = labelBitmap.select0(nodeId)) >= 0) {
-                nodeId = bitmapIndex + 1 - nodeId;
                 if (cap < ++length) {
                     buffer.flip();
                     buffer = CharBuffer.allocate(cap << 1).put(buffer);
                 }
-                buffer.put(cap - length, labels[bitmapIndex - nodeId]);
+                buffer.put(cap - length, labels[nodeId - 1]);
+                nodeId = bitmapIndex + 1 - nodeId;
             }
             String s = new String(buffer.array(), cap - length, length);
             buffer.clear();
@@ -125,24 +125,18 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
             private final char[] chars = str.toCharArray();
             private int pos = 0;
             private int layer = 0;
-            private int nodeId = 0;
-            private int bitmapIndex = 0;
+            private int[] state = new int[2]; // nodeId + bitmapIndex
 
             {
-                advance(); // 初始化查找第一个前缀
+                if (!isLeaf.get(0)) {
+                    advance(); // 初始化查找第一个前缀
+                }
             }
 
             protected void advance() {
-                while (pos < chars.length) {
-                    int index = labelSearch(nodeId, bitmapIndex, chars[pos], layer < 3);
-                    if (index < 0) {
-                        break;
-                    }
-                    nodeId = index + 1 - nodeId;
-                    bitmapIndex = labelBitmap.select1(nodeId) + 1;
-                    layer++;
-                    pos++;
-                    if (isLeaf.get(nodeId)) {
+                while (pos < chars.length && state.length > 1) {
+                    state = moveDown(state[0], state[1], chars[pos++], ++layer);
+                    if (state.length > 1 && isLeaf.get(state[0])) {
                         next = new String(chars, 0, pos);
                         return;
                     }
@@ -155,7 +149,7 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
     @Override
     public Iterator<String> iterator(boolean orderly) {
         if (orderly) {
-            return traverse(0, "");
+            return dfs(0, "");
         } else {
             return new Iterator<>() {
                 private int index = isLeaf.nextSetBit(0);
@@ -177,10 +171,10 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
 
     @Override
     public Iterator<String> prefixSearch(String prefix) {
-        return traverse(extract(prefix), prefix);
+        return dfs(extract(prefix), prefix);
     }
 
-    private Iterator<String> traverse(int rootId, String prefix) {
+    private Iterator<String> dfs(int rootId, String prefix) {
         return new TermIterator() {
             private final CharBuffer charBuffer = CharBuffer.allocate(256);
             private int nodeId = rootId;
@@ -229,18 +223,22 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
     private int extract(String key) {
         buffer.append(key);
         buffer.flip();
-        int nodeId = 0, bitmapIndex = 0, layer = 0;
-        while (buffer.hasRemaining()) {
-            int index = labelSearch(nodeId, bitmapIndex, buffer.get(), layer < 3);
-            if (index < 0) {
-                return -1;
-            }
-            layer++;
-            nodeId = index + 1 - nodeId;
-            bitmapIndex = labelBitmap.select1(nodeId) + 1;
+        int[] state = new int[2];
+        while (buffer.hasRemaining() && state.length > 1) {
+            state = moveDown(state[0], state[1], buffer.get(), buffer.position());
         }
         buffer.clear();
-        return nodeId;
+        return state[0];
+    }
+
+    private int[] moveDown(int nodeId, int bitmapIndex, char c, int layer) {
+        int index = labelSearch(nodeId, bitmapIndex, c, layer <= 3);
+        if (index < 0) {
+            return new int[] { -1 };
+        }
+        nodeId = index + 1 - nodeId;
+        bitmapIndex = labelBitmap.select1(nodeId) + 1;
+        return new int[] { nodeId, bitmapIndex };
     }
 
     /**
@@ -258,7 +256,6 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
             if (high >= labelBitmap.size() || labelBitmap.get(high)) {
                 return -1;
             }
-            // System.out.println("bSearch: " + (high - bitmapIndex + 1));
             int low = bitmapIndex, mid = -1;
             while (low <= high) {
                 mid = low + high >>> 1;
@@ -273,19 +270,14 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
             }
             return low > high ? -1 : mid;
         } else {
-            // int st = bitmapIndex;
-            while (true) {
-                if (bitmapIndex >= labelBitmap.size() || labelBitmap.get(bitmapIndex)) {
-                    return -1;
-                }
+            while (bitmapIndex < labelBitmap.size() && !labelBitmap.get(bitmapIndex)) {
                 int labelIndex = bitmapIndex - nodeId;
-                if (labelIndex < labels.length && labels[labelIndex] == c) {
-                    break;
+                if (labels[labelIndex] == c) {
+                    return bitmapIndex;
                 }
                 bitmapIndex++;
             }
-            // System.out.println("order: " + (bitmapIndex - st + 1));
-            return bitmapIndex;
+            return -1;
         }
     }
 

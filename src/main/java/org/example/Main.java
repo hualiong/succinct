@@ -20,14 +20,24 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.example.succinct.utils.RamUsageUtil.printSizeOf;
 import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 
 @SuppressWarnings({ "ResultOfMethodCallIgnored" })
 public class Main {
     public static void main(String[] args) throws IOException {
-        String[] keys = new String[] {"ro", "ro", "romane", "romane", "romae", "rubic", "ruben"};
-        NestedSuccinctTrie trie = NestedSuccinctTrie.of(keys, 2);
-        System.out.println(trie.nodeCount());
+        String[] keys = StringGenerateUtil.randomArray(1000000, 32, 0.0f);
+        // String[] keys = new String[] {"roma", "romane", "romae", "rubic", "ruben"};
+        printSizeOf(NestedSuccinctTrie.of(keys, 2));
+        printSizeOf(CharSuccinctTrie.sortedOf(keys));
+        // int length = UniqueSort.sort(keys);
+        // for (int i = 0; i < length; i++) {
+        //     if (trie.index(keys[i]) < 0) {
+        //         System.out.println("Fail: " + trie.index(keys[i]));
+        //         return;
+        //     }
+        // }
+        // System.out.println("Success");
     }
 
     public static void iteratorTest(int flag) throws IOException {

@@ -17,11 +17,11 @@ import java.util.TreeSet;
 import java.util.function.Function;
 
 public class SuccinctTrieTest {
-    private static final int COUNT = 10000;
-    private final Function<String[], SuccinctTrie> constructor = CharSuccinctTrie2::of;
-    private String[] unordered;
-    private Set<String> unique = new TreeSet<>();
-    private SuccinctTrie trie;
+    static final int COUNT = 10000;
+    final Function<String[], SuccinctTrie> constructor = CharSuccinctTrie::of;
+    String[] unordered;
+    Set<String> unique = new TreeSet<>();
+    SuccinctTrie trie;
 
     @Before
     public void setUp() {
