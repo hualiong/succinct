@@ -2,8 +2,6 @@ package org.example;
 
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.example.succinct.api.SuccinctTrie;
-import org.example.succinct.archive.ByteSuccinctSet3;
-import org.example.succinct.archive.CharSuccinctSet3;
 import org.example.succinct.core.*;
 import org.example.succinct.common.*;
 import org.example.succinct.api.RankSelectBitSet;
@@ -11,8 +9,6 @@ import org.example.succinct.utils.Recorder;
 import org.example.succinct.utils.StringEncoder;
 import org.example.succinct.utils.StringGenerateUtil;
 import org.example.succinct.utils.Timer;
-import org.example.succinct.utils.UniqueSort;
-
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayDeque;
@@ -27,10 +23,10 @@ import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 @SuppressWarnings({ "ResultOfMethodCallIgnored" })
 public class Main {
     public static void main(String[] args) throws IOException {
-        String[] keys = StringGenerateUtil.randomArray(1000000, 0, 32, 0.0f);
+        String[] keys = StringGenerateUtil.randomArray(10000, 32, 0.0f);
         // String[] keys = new String[] {"ro", "romane", "romae", "rubic", "ruben"};
-        NestedSuccinctTrie nst = NestedSuccinctTrie.of(keys, 5);
-        // System.out.println(nst.index("romane"));
+        NestedSuccinctTrie nst = NestedSuccinctTrie.of(keys, 10);
+        System.out.println(nst);
         printSizeOf(nst);
         printSizeOf(CharSuccinctTrie.sortedOf(keys));
         // int length = UniqueSort.sort(keys);
@@ -80,49 +76,6 @@ public class Main {
             });
             long ms = Timer.ms(now);
             System.out.printf("%s: %dms | %s\n", bst.getClass().getSimpleName(), ms, sizeOf(bst));
-        }
-    }
-
-    public static void containsTest(int flag) {
-        String[] randoms = StringGenerateUtil.randomArray(1000000, 32, 0.0f);
-        System.out.printf("Data: %s\n", sizeOf(randoms));
-        Arrays.parallelSort(randoms);
-        Recorder t = new Recorder();
-        if ((flag & 1) > 0) {
-            Set<String> set = Set.of(randoms);
-            t.multi(randoms, set::contains);
-            System.out.printf("%s: %dms | %s\n", set.getClass().getSimpleName(), t.sum(), sizeOf(set));
-            t.reset();
-        }
-        if ((flag & 2) > 0) {
-            SimpleFSA fsa = new SimpleFSA(randoms);
-            t.multi(randoms, fsa::contains);
-            System.out.printf("%s: %dms | %s\n", fsa.getClass().getSimpleName(), t.sum(), sizeOf(fsa));
-            t.reset();
-        }
-        if ((flag & 4) > 0) {
-            ByteSuccinctSet ss = ByteSuccinctSet.of(randoms);
-            t.multi(randoms, ss::contains);
-            System.out.printf("%s: %dms | %s\n", ss.getClass().getSimpleName(), t.sum(), sizeOf(ss));
-            t.reset();
-        }
-        if ((flag & 8) > 0) {
-            ByteSuccinctSet3 ss = ByteSuccinctSet3.of(randoms);
-            t.multi(randoms, ss::contains);
-            System.out.printf("%s: %dms | %s\n", ss.getClass().getSimpleName(), t.sum(), sizeOf(ss));
-            t.reset();
-        }
-        if ((flag & 16) > 0) {
-            CharSuccinctSet ss = CharSuccinctSet.sortedOf(randoms);
-            t.multi(randoms, ss::contains);
-            System.out.printf("%s: %dms | %s\n", ss.getClass().getSimpleName(), t.sum(), sizeOf(ss));
-            t.reset();
-        }
-        if ((flag & 32) > 0) {
-            CharSuccinctSet3 ss = CharSuccinctSet3.sortedOf(randoms);
-            t.multi(randoms, ss::contains);
-            System.out.printf("%s: %dms | %s\n", ss.getClass().getSimpleName(), t.sum(), sizeOf(ss));
-            t.reset();
         }
     }
 

@@ -3,7 +3,17 @@ package org.example.succinct.api;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-public interface SuccinctTrie extends SuccinctSet {
+public interface SuccinctTrie {
+    int size();
+
+    int nodeCount();
+
+    boolean contains(String key);
+
+    int index(String key);
+
+    String get(int nodeId);
+
     Iterator<String> iterator(boolean orderly);
 
     Iterator<String> prefixKeysOf(String str);

@@ -132,7 +132,7 @@ public class NestedSuccinctTrie implements SuccinctTrie {
     }
 
     public int level() {
-        return isLeaf.oneCount();
+        return level;
     }
 
     @Override
@@ -395,7 +395,14 @@ public class NestedSuccinctTrie implements SuccinctTrie {
 
     @Override
     public String toString() {
-        return "NestedSuccinctSet[" + labels.length + " labels, " + labelBitmap.size() + " bits]";
+        StringBuilder str = new StringBuilder("NestedSuccinctSet[" + nodeCount());
+        NestedSuccinctTrie trie = nestedTrie;
+        while (trie != null) {
+            str.append(" -> " + trie.nodeCount());
+            trie = trie.nestedTrie;
+        }
+        str.append("]");
+        return str.toString();
     }
 
 }

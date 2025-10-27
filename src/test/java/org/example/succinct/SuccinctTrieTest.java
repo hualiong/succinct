@@ -26,8 +26,9 @@ public class SuccinctTrieTest {
     public void setUp() {
         unordered = StringGenerateUtil.randomArray(COUNT, 0, 10, 0.5f);
         unique = new TreeSet<>();
-        unique.addAll(Arrays.asList(unordered));
-        trie = constructor.apply(unordered);
+        String[] half = Arrays.copyOf(unordered, COUNT / 2);
+        unique.addAll(Arrays.asList(half));
+        trie = constructor.apply(half);
     }
 
     @Test
@@ -37,8 +38,10 @@ public class SuccinctTrieTest {
         for (String random : unordered) {
             int index = trie.index(random);
             assertEquals(unique.contains(random), index >= 0);
-            assertEquals(random, trie.get(index));
-            array[index] = -1;
+            if (index >= 0) {
+                assertEquals(random, trie.get(index));
+                array[index] = -1;
+            }
         }
         Arrays.stream(array).filter(i -> i > 0).forEach(i -> assertNull(trie.get(i)));
     }
