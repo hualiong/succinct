@@ -11,6 +11,7 @@ import org.example.succinct.utils.Recorder;
 import org.example.succinct.utils.StringEncoder;
 import org.example.succinct.utils.StringGenerateUtil;
 import org.example.succinct.utils.Timer;
+import org.example.succinct.utils.UniqueSort;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -26,14 +27,17 @@ import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 @SuppressWarnings({ "ResultOfMethodCallIgnored" })
 public class Main {
     public static void main(String[] args) throws IOException {
-        String[] keys = StringGenerateUtil.randomArray(1000000, 32, 0.0f);
-        // String[] keys = new String[] {"roma", "romane", "romae", "rubic", "ruben"};
-        printSizeOf(NestedSuccinctTrie.of(keys, 2));
+        String[] keys = StringGenerateUtil.randomArray(1000000, 0, 32, 0.0f);
+        // String[] keys = new String[] {"ro", "romane", "romae", "rubic", "ruben"};
+        NestedSuccinctTrie nst = NestedSuccinctTrie.of(keys, 5);
+        // System.out.println(nst.index("romane"));
+        printSizeOf(nst);
         printSizeOf(CharSuccinctTrie.sortedOf(keys));
         // int length = UniqueSort.sort(keys);
         // for (int i = 0; i < length; i++) {
-        //     if (trie.index(keys[i]) < 0) {
-        //         System.out.println("Fail: " + trie.index(keys[i]));
+        //     int nodeId = nst.index(keys[i]);
+        //     if (nodeId < 0 || !keys[i].equals(nst.get(nodeId))) {
+        //         System.out.println("Fail: " + nst.index(keys[i]));
         //         return;
         //     }
         // }

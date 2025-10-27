@@ -16,7 +16,7 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
     private final char[] labels;
     private final RankSelectBitSet labelBitmap;
     private final RankSelectBitSet isLeaf;
-    private CharBuffer buffer = CharBuffer.allocate(128);
+    private final CharBuffer buffer;
 
     public static CharSuccinctTrie2 of(String... keys) {
         return CharSuccinctTrie2.of(keys, UniqueSort.sort(keys));
@@ -33,12 +33,13 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
 
         Queue<Range> queue = new ArrayDeque<>(length);
         queue.add(new Range(0, length, 0));
-        // int temp = 0;
+        int maxLen = 1;
         for (int bitPos = 0, nodeId = 0; !queue.isEmpty(); nodeId++) {
             Range range = queue.poll();
             int L = range.L(), R = range.R(), index = range.index();
             // 检查当前节点是否是叶子节点并跳过重复字符串（最短的一定是第一个）
             if (keys[L].length() == index) {
+                maxLen = Math.max(maxLen, index);
                 isLeafBuilder.set(nodeId, true);
                 while (++L < R && keys[L].length() == index);
                 // L++;
@@ -70,13 +71,14 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
         return new CharSuccinctTrie2(
                 labels.toCharArray(),
                 labelBitmapBuilder.build(true),
-                isLeafBuilder.build(false));
+                isLeafBuilder.build(false), maxLen);
     }
 
-    private CharSuccinctTrie2(char[] labels, RankSelectBitSet labelBitmap, RankSelectBitSet isLeaf) {
+    private CharSuccinctTrie2(char[] labels, RankSelectBitSet labelBitmap, RankSelectBitSet isLeaf, int maxLen) {
         this.labels = labels;
         this.labelBitmap = labelBitmap;
         this.isLeaf = isLeaf;
+        this.buffer = CharBuffer.allocate(maxLen);
     }
 
     @Override
@@ -105,11 +107,7 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
         if (isLeaf.get(nodeId)) {
             int bitmapIndex, cap = buffer.capacity(), length = 0;
             while ((bitmapIndex = labelBitmap.select0(nodeId)) >= 0) {
-                if (cap < ++length) {
-                    buffer.flip();
-                    buffer = CharBuffer.allocate(cap << 1).put(buffer);
-                }
-                buffer.put(cap - length, labels[nodeId - 1]);
+                buffer.put(cap - ++length, labels[nodeId - 1]);
                 nodeId = bitmapIndex + 1 - nodeId;
             }
             String s = new String(buffer.array(), cap - length, length);

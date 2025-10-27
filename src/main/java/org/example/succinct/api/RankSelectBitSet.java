@@ -21,7 +21,7 @@ public interface RankSelectBitSet {
     int select0(int k);
 
     default boolean isInvalid(long n, long min, long max) {
-        assert min <= n && n <= max : "Index (" + n + ") is not in valid range [" + min + ", " + max + "]";
+        // assert min <= n && n <= max : "Index (" + n + ") is not in valid range [" + min + ", " + max + "]";
         return n < min || n > max;
     }
 

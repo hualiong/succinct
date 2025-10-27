@@ -7,7 +7,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -18,7 +17,7 @@ import java.util.function.Function;
 
 public class SuccinctTrieTest {
     static final int COUNT = 10000;
-    final Function<String[], SuccinctTrie> constructor = CharSuccinctTrie::of;
+    final Function<String[], SuccinctTrie> constructor = NestedSuccinctTrie::of;
     String[] unordered;
     Set<String> unique = new TreeSet<>();
     SuccinctTrie trie;
