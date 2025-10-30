@@ -22,18 +22,19 @@ public class NestedSuccinctTrie implements SuccinctTrie {
     private final CharBuffer buffer;
     private final int level;
 
-    private record Range(int L, int R, int index, boolean nested) {}
+    private record Range(int L, int R, int index, boolean nested) {
+    }
 
     public static NestedSuccinctTrie of(String... keys) {
         Arrays.sort(keys);
         return NestedSuccinctTrie.sortedOf(keys);
     }
-    
+
     public static NestedSuccinctTrie of(String[] keys, int level) {
         Arrays.sort(keys);
         return NestedSuccinctTrie.sortedOf(keys, level);
     }
-    
+
     public static NestedSuccinctTrie sortedOf(String... keys) {
         return NestedSuccinctTrie.sortedOf(keys, 4);
     }
@@ -48,7 +49,7 @@ public class NestedSuccinctTrie implements SuccinctTrie {
         List<String> compress = new ArrayList<>();
         queue.add(new Range(0, keys.length, 0, false));
         int maxLen = 1;
-       for (int bitPos = 0, nodeId = 0; !queue.isEmpty(); nodeId++) {
+        for (int bitPos = 0, nodeId = 0; !queue.isEmpty(); nodeId++) {
             Range range = queue.poll();
             int L = range.L(), R = range.R(), index = range.index();
             if (range.nested() && level > 1) {
@@ -56,10 +57,12 @@ public class NestedSuccinctTrie implements SuccinctTrie {
                 charLabels.add(keys[L].charAt(index));
                 int offset = 1;
                 for (int next = index + 1; keys[L].length() > next; offset++, next++) {
-                    int i = L + 1;
+                    int i = L;
                     char nextChar = keys[L].charAt(next);
-                    while (i < R && keys[i].charAt(next) == nextChar) i++;
-                    if (i != R) break;
+                    while (++i < R && keys[i].charAt(next) == nextChar);
+                    if (i != R) {
+                        break;
+                    }
                 }
                 bitPos++;
                 compress.add(new StringBuilder(keys[L].substring(index - 1, index + offset)).reverse().toString());
@@ -77,11 +80,12 @@ public class NestedSuccinctTrie implements SuccinctTrie {
                     boolean nested = false;
                     int end = start + 1;
                     char currentChar = keys[start].charAt(index);
-                    while (end < R && keys[end].charAt(index) == currentChar) end++;
+                    while (end < R && keys[end].charAt(index) == currentChar)
+                        end++;
                     if (level > 1 && start == L && end == R && keys[start].length() > index + 1) {
-                        int next = index + 1, i = start + 1;
+                        int next = index + 1, i = start;
                         char nextChar = keys[start].charAt(next);
-                        while (i < end && keys[i].charAt(next) == nextChar) i++;
+                        while (++i < end && keys[i].charAt(next) == nextChar);
                         nested = i == end; // 仅有一个子节点
                     }
                     bitPos++; // 设置子节点标记(0)
@@ -178,42 +182,24 @@ public class NestedSuccinctTrie implements SuccinctTrie {
         }
         return null;
     }
-    
+
     @Override
     public Iterator<String> prefixKeysOf(String str) {
         return new TermIterator() {
             private final char[] chars = str.toCharArray();
             private int pos = 0;
-            private int layer = 0;
-            private int nodeId = 0;
-            private int bitmapIndex = 0;
+            private int[] state = new int[2]; // nodeId + bitmapIndex
 
             {
-                advance(); // 初始化查找第一个前缀
+                if (!isLeaf.get(0)) {
+                    advance(); // 初始化查找第一个前缀
+                }
             }
 
             protected void advance() {
-                out: while (pos < chars.length) {
-                    int[] index = labelSearch(nodeId, bitmapIndex, chars[pos], layer < 3);
-                    nodeId = index[0] + 1 - nodeId;
-                    if (index[0] < 0) {
-                        break;
-                    }
-                    if (index.length > 1) {
-                        String str = nestedTrie.get(index[1]);
-                        for (int i = str.length() - 2; i >= 0; i--) {
-                            if (++pos >= chars.length || str.charAt(i) != chars[++pos]) {
-                                break out;
-                            }
-                        }
-                        bitmapIndex = labelBitmap.select1(nodeId) + 1;
-                        nodeId = bitmapIndex + 1 - nodeId;
-                    }
-                    layer++;
-                    bitmapIndex = labelBitmap.select1(nodeId) + 1;
-                    layer++;
-                    pos++;
-                    if (isLeaf.get(nodeId)) {
+                while (pos < chars.length && (state = moveDown(state[0], state[1], chars, pos)).length > 1) {
+                    pos = state[2];
+                    if (isLeaf.get(state[0])) {
                         next = new String(chars, 0, pos);
                         return;
                     }
@@ -253,7 +239,7 @@ public class NestedSuccinctTrie implements SuccinctTrie {
 
     private Iterator<String> dfs(int rootId, String prefix) {
         return new TermIterator() {
-            private final CharBuffer charBuffer = CharBuffer.allocate(256);
+            private final CharBuffer charBuffer = CharBuffer.allocate(buffer.capacity());
             private int nodeId = rootId;
             private int bitmapIndex = rootId < 0 ? labelBitmap.size() : labelBitmap.select1(rootId) + 1;
 
@@ -298,42 +284,62 @@ public class NestedSuccinctTrie implements SuccinctTrie {
     }
 
     private int extract(String key) {
+        if (key.length() > buffer.capacity()) {
+            return -1;
+        }
         buffer.append(key);
         buffer.flip();
         int[] state = new int[2];
-        while (buffer.hasRemaining() && state.length > 1) {
-            state = moveDown(state[0], state[1], buffer.get(), buffer.position());
+        while (buffer.hasRemaining() && (state = moveDown(state[0], state[1], buffer.array(), buffer.limit(),
+                buffer.position())).length > 1) {
+            buffer.position(state[2]);
         }
         buffer.clear();
         return state[0];
     }
 
     // private int[] moveUp(int nodeId) {
-    //     int bitmapIndex = labelBitmap.select0(nodeId) + 1;
-    //     nodeId = bitmapIndex - nodeId;
-    //     return new int[] { nodeId, bitmapIndex };
+    // int bitmapIndex = labelBitmap.select0(nodeId) + 1;
+    // nodeId = bitmapIndex - nodeId;
+    // return new int[] { nodeId, bitmapIndex };
     // }
-    
-    private int[] moveDown(int nodeId, int bitmapIndex, char c, int layer) {
-        int[] index = labelSearch(nodeId, bitmapIndex, c, layer <= 3);
-        if (index[0] < 0) {
+
+    private int[] moveDown(int nodeId, int bitmapIndex, char[] chars, int i) {
+        return moveDown(nodeId, bitmapIndex, chars, chars.length, i);
+    }
+
+    private int[] moveDown(int nodeId, int bitmapIndex, char[] chars, int length, int i) {
+        int linkId = -1;
+        // 单个子节点
+        if (labelBitmap.get(bitmapIndex + 1)) {
+            int labelIndex = bitmapIndex - nodeId;
+            if (isLink != null && isLink.get(labelIndex + 1)) {
+                linkId = getLinkId(labelIndex + 1);
+                assert linkId >= 0 : "linkId is -1";
+            } else if (labels[labelIndex] != chars[i]) {
+                bitmapIndex = -1;
+            }
+        } else {
+            bitmapIndex = labelSearch(nodeId, bitmapIndex, chars[i], i < 3);
+        }
+        if (bitmapIndex < 0) {
             return new int[] { -1 };
         }
-        nodeId = index[0] + 1 - nodeId;
-        if (index[1] >= 0) {
-            buffer.position(buffer.position() - 1);
-            String str = nestedTrie.get(index[1]);
-            for (int i = str.length() - 1; i >= 0; i--) {
-                if (!buffer.hasRemaining() || str.charAt(i) != buffer.get()) {
-                    buffer.clear();
+        nodeId = bitmapIndex + 1 - nodeId;
+        if (linkId >= 0) {
+            String str = nestedTrie.get(linkId);
+            for (int j = str.length() - 1; j >= 0; j--) {
+                if (i >= length || str.charAt(j) != chars[i++]) {
                     return new int[] { -1 };
                 }
             }
             bitmapIndex = labelBitmap.select1(nodeId) + 1;
             nodeId = bitmapIndex + 1 - nodeId;
+        } else {
+            i++;
         }
         bitmapIndex = labelBitmap.select1(nodeId) + 1;
-        return new int[] { nodeId, bitmapIndex };
+        return new int[] { nodeId, bitmapIndex, i };
     }
 
     /**
@@ -345,45 +351,22 @@ public class NestedSuccinctTrie implements SuccinctTrie {
      * @param bSearch     是否使用二分查找
      * @return 目标标签在 {@code labelBitmap} 中的下标，否则返回 -1
      */
-    private int[] labelSearch(int nodeId, int bitmapIndex, char c, boolean bSearch) {
+    private int labelSearch(int nodeId, int bitmapIndex, char c, boolean bSearch) {
         if (bSearch) {
             int high = labelBitmap.select1(nodeId + 1) - 1;
             if (high >= labelBitmap.size() || labelBitmap.get(high)) {
-                return new int[] { -1, -1 };
+                return -1;
             }
-            int low = bitmapIndex, mid = -1, linkId = -1;
-            while (low <= high) {
-                linkId = -1;
-                mid = low + (high - low >>> 1);
-                int labelIndex = mid - nodeId;
-                if (isLink != null && isLink.get(labelIndex + 1)) {
-                    linkId = getLinkId(labelIndex + 1);
-                    break;
-                }
-                char label = labels[labelIndex];
-                if (label == c) {
-                    break;
-                } else if (label < c) {
-                    low = mid + 1;
-                } else {
-                    high = mid - 1;
-                }
-            }
-            return new int[] { low > high ? -1 : mid, linkId };
+            int index = Arrays.binarySearch(labels, bitmapIndex - nodeId, high - nodeId + 1, c);
+            return index < 0 ? -1 : index + nodeId;
         } else {
             while (bitmapIndex < labelBitmap.size() && !labelBitmap.get(bitmapIndex)) {
-                int labelIndex = bitmapIndex - nodeId, linkId = -1;
-                char label = labels[labelIndex];
-                if (isLink != null && isLink.get(labelIndex + 1)) {
-                    linkId = getLinkId(labelIndex + 1);
-                    label = c;
-                }
-                if (label == c) {
-                    return new int[] { bitmapIndex, linkId };
+                if (labels[bitmapIndex - nodeId] == c) {
+                    return bitmapIndex;
                 }
                 bitmapIndex++;
             }
-            return new int[] { -1, -1 };
+            return -1;
         }
     }
 

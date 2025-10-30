@@ -279,33 +279,19 @@ public class ByteSuccinctTrie implements SuccinctTrie {
                 return -1;
             }
             // System.out.println("bSearch: " + (high - bitmapIndex + 1));
-            int low = bitmapIndex, mid = -1;
-            while (low <= high) {
-                mid = low + high >>> 1;
-                byte label = labels[mid - nodeId];
-                if (label == b) {
-                    break;
-                } else if (label < b) {
-                    low = mid + 1;
-                } else {
-                    high = mid - 1;
-                }
-            }
-            return low > high ? -1 : mid;
+            int index = Arrays.binarySearch(labels, bitmapIndex - nodeId, high - nodeId + 1, b);
+            return index < 0 ? -1 : index + nodeId;
         } else {
             // int st = bitmapIndex;
-            while (true) {
-                if (bitmapIndex >= labelBitmap.size() || labelBitmap.get(bitmapIndex)) {
-                    return -1;
-                }
+            while (bitmapIndex < labelBitmap.size() && !labelBitmap.get(bitmapIndex)) {
                 int labelIndex = bitmapIndex - nodeId;
-                if (labelIndex < labels.length && labels[labelIndex] == b) {
-                    break;
+                if (labels[labelIndex] == b) {
+                    return bitmapIndex;
                 }
                 bitmapIndex++;
             }
             // System.out.println("order: " + (bitmapIndex - st + 1));
-            return bitmapIndex;
+            return -1;
         }
     }
 

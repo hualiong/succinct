@@ -9,6 +9,7 @@ import org.example.succinct.utils.UniqueSort;
 
 import java.nio.CharBuffer;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Queue;
 
@@ -254,19 +255,8 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
             if (high >= labelBitmap.size() || labelBitmap.get(high)) {
                 return -1;
             }
-            int low = bitmapIndex, mid = -1;
-            while (low <= high) {
-                mid = low + high >>> 1;
-                char label = labels[mid - nodeId];
-                if (label == c) {
-                    break;
-                } else if (label < c) {
-                    low = mid + 1;
-                } else {
-                    high = mid - 1;
-                }
-            }
-            return low > high ? -1 : mid;
+            int index = Arrays.binarySearch(labels, bitmapIndex - nodeId, high - nodeId + 1, c);
+            return index < 0 ? -1 : index + nodeId;
         } else {
             while (bitmapIndex < labelBitmap.size() && !labelBitmap.get(bitmapIndex)) {
                 int labelIndex = bitmapIndex - nodeId;
