@@ -205,10 +205,11 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
                         nodeId = bitmapIndex - nodeId;
                         charBuffer.position(charBuffer.position() - 1);
                     }
-                    charBuffer.put(labels[bitmapIndex - nodeId]);
                     // 向下转移
                     nodeId = bitmapIndex + 1 - nodeId;
                     bitmapIndex = labelBitmap.select1(nodeId) + 1;
+                    
+                    charBuffer.put(labels[nodeId - 1]);
                     if (isLeaf.get(nodeId)) {
                         charBuffer.flip();
                         next = charBuffer.toString();

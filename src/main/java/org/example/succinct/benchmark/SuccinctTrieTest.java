@@ -18,26 +18,26 @@ import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 
 public class SuccinctTrieTest {
     public static void main(String[] args) {
-        getTest(100000);
+        containsTest(100000);
     }
 
     public static void containsTest(int count) {
-        String[] randoms = StringGenerateUtil.randomArray(count, 32, 0.0f);
+        String[] randoms = StringGenerateUtil.randomArray(count, 2, 32, 0.0f);
         Arrays.parallelSort(randoms);
         PatriciaTrie pTrie = new PatriciaTrie();
         for (String random : randoms) {
             pTrie.insert(random);
         }
-        InlinedTailLOUDSTrie trie = new InlinedTailLOUDSTrie(pTrie);
+        // InlinedTailLOUDSTrie trie = new InlinedTailLOUDSTrie(pTrie);
         SuccinctTrie bss4 = ByteSuccinctTrie.of(randoms);
         SuccinctTrie css4 = CharSuccinctTrie.sortedOf(randoms);
-        SuccinctTrie nst = NestedSuccinctTrie.sortedOf(randoms);
-        SimpleFSA fsa = new SimpleFSA(randoms);
+        SuccinctTrie nst = NestedSuccinctTrie.sortedOf(randoms, 2);
+        // SimpleFSA fsa = new SimpleFSA(randoms);
         Recorder t = new Recorder();
         System.out.printf("Data: %s\n", sizeOf(randoms));
-        t.multi(randoms, trie::contains);
-        System.out.printf("%s: %dms | %s\n", trie.getClass().getSimpleName(), t.sum(), sizeOf(trie));
-        t.reset();
+        // t.multi(randoms, trie::contains);
+        // System.out.printf("%s: %dms | %s\n", trie.getClass().getSimpleName(), t.sum(), sizeOf(trie));
+        // t.reset();
         t.multi(randoms, bss4::contains);
         System.out.printf("%s: %dms | %s\n", bss4.getClass().getSimpleName(), t.sum(), sizeOf(bss4));
         t.reset();
@@ -46,9 +46,9 @@ public class SuccinctTrieTest {
         t.reset();
         t.multi(randoms, nst::contains);
         System.out.printf("%s: %dms | %s\n", nst.getClass().getSimpleName(), t.sum(), sizeOf(nst));
-        t.reset();
-        t.multi(randoms, fsa::contains);
-        System.out.printf("%s: %dms | %s\n", fsa.getClass().getSimpleName(), t.sum(), sizeOf(fsa));
+        // t.reset();
+        // t.multi(randoms, fsa::contains);
+        // System.out.printf("%s: %dms | %s\n", fsa.getClass().getSimpleName(), t.sum(), sizeOf(fsa));
     }
     
     public static void getTest(int count) {

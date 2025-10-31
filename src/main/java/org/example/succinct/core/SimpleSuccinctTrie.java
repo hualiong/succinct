@@ -258,21 +258,17 @@ public class SimpleSuccinctTrie implements SuccinctTrie {
      *
      * @param nodeId      当前节点ID
      * @param bitmapIndex 当前节点在 {@code labelBitmap} 中的起始下标
-     * @param b           要搜索的标签
+     * @param c           要搜索的标签
      * @return 目标标签在 {@code labelBitmap} 中的下标，否则返回 -1
      */
-    private int labelSearch(int nodeId, int bitmapIndex, char b) {
-        while (true) {
-            if (bitmapIndex >= labelBitmap.size || labelBitmap.get(bitmapIndex)) {
-                return -1;
-            }
-            int labelIndex = bitmapIndex - nodeId;
-            if (labelIndex < labels.length && labels[labelIndex] == b) {
-                break;
+    private int labelSearch(int nodeId, int bitmapIndex, char c) {
+        while (bitmapIndex < labelBitmap.size && !labelBitmap.get(bitmapIndex)) {
+            if (labels[bitmapIndex - nodeId] == c) {
+                return bitmapIndex;
             }
             bitmapIndex++;
         }
-        return bitmapIndex;
+        return -1;
     }
 
     // 辅助类：表示键范围
