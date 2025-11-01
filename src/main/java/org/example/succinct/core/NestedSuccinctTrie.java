@@ -288,7 +288,7 @@ public class NestedSuccinctTrie implements SuccinctTrie {
     }
 
     private int moveDownWithBuffer(int[] state, CharBuffer charBuffer) {
-        int linkId = -1, length = -1;
+        int linkId = -1, pos = charBuffer.position();
         // 单个子节点
         if (labelBitmap.get(state[1] + 1)) {
             int labelIndex = state[1] - state[0];
@@ -300,8 +300,7 @@ public class NestedSuccinctTrie implements SuccinctTrie {
         state[0] = state[1] + 1 - state[0];
         if (linkId >= 0) {
             String str = nestedTrie.get(linkId);
-            length = str.length();
-            for (int i = length - 1; i >= 0; i--) {
+            for (int i = str.length() - 1; i >= 0; i--) {
                 charBuffer.put(str.charAt(i));
             }
             state[1] = labelBitmap.select1(state[0]) + 1;
@@ -310,7 +309,7 @@ public class NestedSuccinctTrie implements SuccinctTrie {
             charBuffer.put(labels[state[0] - 1]);
         }
         state[1] = labelBitmap.select1(state[0]) + 1;
-        return length;
+        return charBuffer.position() - pos;
     }
     
     private boolean moveUpAndRightWithBuffer(int[] state, CharBuffer charBuffer, int length) {
@@ -340,15 +339,6 @@ public class NestedSuccinctTrie implements SuccinctTrie {
         return state[1] >= 0 ? state[0] : -1;
     }
 
-    // private char[] moveUp(int[] state) {
-    //     int bitmapIndex = labelBitmap.select0(nodeId);
-    //     if (isLink.get(nodeId)) {
-    //         int linkId = getLinkId(nodeId, bitmapIndex - nodeId);
-    //     }
-    //     nodeId = bitmapIndex - nodeId;
-    //     return new int[] { nodeId, bitmapIndex };
-    // }
-
     private int moveDown(int[] state, char[] chars, int i) {
         return moveDown(state, chars, chars.length, i);
     }
@@ -358,13 +348,12 @@ public class NestedSuccinctTrie implements SuccinctTrie {
     }
 
     private int moveDown(int[] state, char[] chars, int length, int i) {
-        int linkId = -1;
+        boolean isLinkNode = false;
         // 单个子节点
         if (labelBitmap.get(state[1] + 1)) {
             int labelIndex = state[1] - state[0];
             if (isLink != null && isLink.get(labelIndex + 1)) {
-                linkId = getLinkId(labelIndex + 1);
-                assert linkId >= 0 : "linkId is -1";
+                isLinkNode = true;
             } else if (labels[labelIndex] != chars[i]) {
                 state[1] = -1;
             }
@@ -375,15 +364,16 @@ public class NestedSuccinctTrie implements SuccinctTrie {
             return -1;
         }
         state[0] = state[1] + 1 - state[0];
-        if (linkId >= 0) {
-            String str = nestedTrie.get(linkId);
+        if (isLinkNode) {
+            int index = labelBitmap.select1(state[0]) + 1, secondId = index + 1 - state[0];
+            String str = nestedTrie.get(getLinkId(state[0], secondId));
             for (int j = str.length() - 1; j >= 0; j--) {
                 if (i >= length || str.charAt(j) != chars[i++]) {
                     return -1;
                 }
             }
-            state[1] = labelBitmap.select1(state[0]) + 1;
-            state[0] = state[1] + 1 - state[0];
+            state[1] = index;
+            state[0] = secondId;
         } else {
             i++;
         }
