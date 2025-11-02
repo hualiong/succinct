@@ -5,7 +5,6 @@ import org.example.succinct.api.RankSelectBitSet;
 import org.example.succinct.api.SuccinctTrie;
 import org.example.succinct.common.Range;
 import org.example.succinct.common.RankSelectBitSet4;
-import org.example.succinct.utils.UniqueSort;
 
 import java.nio.CharBuffer;
 import java.util.ArrayDeque;
@@ -17,23 +16,22 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
     private final char[] labels;
     private final RankSelectBitSet labelBitmap;
     private final RankSelectBitSet isLeaf;
+    private final RankSelectBitSet isCompress;
     private final CharBuffer buffer;
 
     public static CharSuccinctTrie2 of(String... keys) {
-        return CharSuccinctTrie2.of(keys, UniqueSort.sort(keys));
+        Arrays.sort(keys);
+        return CharSuccinctTrie2.sortedOf(keys);
     }
 
-    public static CharSuccinctTrie2 uniqueAndSortedOf(String... keys) {
-        return CharSuccinctTrie2.of(keys, keys.length);
-    }
-
-    public static CharSuccinctTrie2 of(String[] keys, int length) {
-        CharArrayList labels = new CharArrayList();
+    public static CharSuccinctTrie2 sortedOf(String[] keys) {
+        CharArrayList charLabels = new CharArrayList();
         RankSelectBitSet.Builder labelBitmapBuilder = new RankSelectBitSet4.Builder();
         RankSelectBitSet.Builder isLeafBuilder = new RankSelectBitSet4.Builder();
+        RankSelectBitSet.Builder isCompressBuilder = new RankSelectBitSet4.Builder();
 
-        Queue<Range> queue = new ArrayDeque<>(length);
-        queue.add(new Range(0, length, 0));
+        Queue<Range> queue = new ArrayDeque<>(keys.length);
+        queue.add(new Range(0, keys.length, 0));
         int maxLen = 1;
         for (int bitPos = 0, nodeId = 0; !queue.isEmpty(); nodeId++) {
             Range range = queue.poll();
@@ -43,42 +41,66 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
                 maxLen = Math.max(maxLen, index);
                 isLeafBuilder.set(nodeId, true);
                 while (++L < R && keys[L].length() == index);
-                // L++;
             }
-            // 处理子节点
-            int start = L;
-            while (start < R) {
-                char currentChar = keys[start].charAt(index);
-                int end = start + 1;
-                while (end < R && keys[end].charAt(index) == currentChar) {
-                    end++;
+            if (L < R) {
+                int i = L;
+                char c = keys[i].charAt(index);
+                while (++i < R && keys[i].charAt(index) == c);
+                if (i == R) {
+                    i = L;
+                    charLabels.add(c);
+                    int pos = ++bitPos;
+                    while (true) {
+                        int before = i;
+                        if (keys[i].length() == ++index) {
+                            while (++i < R && keys[i].length() == index);
+                            if (i >= R) {
+                                queue.add(new Range(before, R, index));
+                                break;
+                            }
+                        }
+                        int start = i;
+                        c = keys[i].charAt(index);
+                        while (++i < R && keys[i].charAt(index) == c);
+                        if (i < R) {
+                            queue.add(new Range(before, R, index));
+                            break;
+                        }
+                        queue.add(new Range(before, before, index));
+                        charLabels.add(c);
+                        bitPos++;
+                        i = start;
+                    }
+                    isCompressBuilder.set(nodeId, bitPos - pos > 0);
+                } else {
+                    // 处理多个子节点
+                    int start = L;
+                    while (start < R) {
+                        int end = start;
+                        c = keys[start].charAt(index);
+                        while (++end < R && keys[end].charAt(index) == c);
+                        bitPos++; // 设置子节点标记(0)
+                        charLabels.add(c); // 添加子节点标签
+                        queue.add(new Range(start, end, index + 1)); // 将子节点范围加入队列
+                        start = end;
+                    }
                 }
-                // 添加子节点标签
-                labels.add(currentChar);
-                // 设置子节点标记(0)
-                bitPos++;
-                // 将子节点范围加入队列
-                queue.add(new Range(start, end, index + 1));
-                start = end;
             }
-            // if (bitPos - temp > 48) {
-            //     System.out.println(bitPos - temp);
-            //     temp = bitPos;
-            // }
-            // 设置节点结束标记(1)
-            labelBitmapBuilder.set(bitPos++, true);
+            labelBitmapBuilder.set(bitPos++, true); // 设置节点结束标记(1)
         }
         // 转换并初始化位图
         return new CharSuccinctTrie2(
-                labels.toCharArray(),
+                charLabels.toCharArray(),
                 labelBitmapBuilder.build(true),
-                isLeafBuilder.build(false), maxLen);
+                isLeafBuilder.build(false),
+                isCompressBuilder.build(false), maxLen);
     }
 
-    private CharSuccinctTrie2(char[] labels, RankSelectBitSet labelBitmap, RankSelectBitSet isLeaf, int maxLen) {
+    private CharSuccinctTrie2(char[] labels, RankSelectBitSet labelBitmap, RankSelectBitSet isLeaf, RankSelectBitSet isCompress, int maxLen) {
         this.labels = labels;
         this.labelBitmap = labelBitmap;
         this.isLeaf = isLeaf;
+        this.isCompress = isCompress;
         this.buffer = CharBuffer.allocate(maxLen);
     }
 

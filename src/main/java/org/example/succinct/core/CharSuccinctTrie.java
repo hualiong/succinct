@@ -42,11 +42,9 @@ public class CharSuccinctTrie implements SuccinctTrie {
             // 处理子节点
             int start = L;
             while (start < R) {
+                int end = start;
                 char currentChar = keys[start].charAt(index);
-                int end = start + 1;
-                while (end < R && keys[end].charAt(index) == currentChar) {
-                    end++;
-                }
+                while (++end < R && keys[end].charAt(index) == currentChar);
                 // 添加子节点标签
                 labels.add(currentChar);
                 // 设置子节点标记(0)
@@ -225,6 +223,7 @@ public class CharSuccinctTrie implements SuccinctTrie {
         while (buffer.hasRemaining()) {
             int index = labelSearch(nodeId, bitmapIndex, buffer.get(), layer < 3);
             if (index < 0) {
+                buffer.clear();
                 return -1;
             }
             layer++;
