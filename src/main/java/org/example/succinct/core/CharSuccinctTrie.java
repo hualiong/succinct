@@ -244,39 +244,22 @@ public class CharSuccinctTrie implements SuccinctTrie {
      * @return 目标标签在 {@code labelBitmap} 中的下标，否则返回 -1
      */
     private int labelSearch(int nodeId, int bitmapIndex, char c, boolean bSearch) {
-        if (bSearch) {
+        if (bSearch && !labelBitmap.get(bitmapIndex + 1)) {
             int high = labelBitmap.select1(nodeId + 1) - 1;
             if (high >= labelBitmap.size() || labelBitmap.get(high)) {
                 return -1;
             }
-            // System.out.println("bSearch: " + (high - bitmapIndex + 1));
-            int low = bitmapIndex, mid = -1;
-            while (low <= high) {
-                mid = low + high >>> 1;
-                char label = labels[mid - nodeId];
-                if (label == c) {
-                    break;
-                } else if (label < c) {
-                    low = mid + 1;
-                } else {
-                    high = mid - 1;
-                }
-            }
-            return low > high ? -1 : mid;
+            int index = Arrays.binarySearch(labels, bitmapIndex - nodeId, high - nodeId + 1, c);
+            return index < 0 ? -1 : index + nodeId;
         } else {
-            // int st = bitmapIndex;
-            while (true) {
-                if (bitmapIndex >= labelBitmap.size() || labelBitmap.get(bitmapIndex)) {
-                    return -1;
-                }
+            while (!labelBitmap.get(bitmapIndex)) {
                 int labelIndex = bitmapIndex - nodeId;
-                if (labelIndex < labels.length && labels[labelIndex] == c) {
-                    break;
+                if (labels[labelIndex] == c) {
+                    return bitmapIndex;
                 }
                 bitmapIndex++;
             }
-            // System.out.println("order: " + (bitmapIndex - st + 1));
-            return bitmapIndex;
+            return -1;
         }
     }
 
