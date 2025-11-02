@@ -191,7 +191,7 @@ public class CharSuccinctTrie implements SuccinctTrie {
                 charBuffer.limit(charBuffer.capacity());
                 while (true) {
                     // 撞墙
-                    while (bitmapIndex >= labelBitmap.size() || labelBitmap.get(bitmapIndex)) {
+                    while (labelBitmap.get(bitmapIndex)) {
                         // 到达根节点，遍历结束
                         if (nodeId == rootId) {
                             next = null;
@@ -246,7 +246,7 @@ public class CharSuccinctTrie implements SuccinctTrie {
     private int labelSearch(int nodeId, int bitmapIndex, char c, boolean bSearch) {
         if (bSearch && !labelBitmap.get(bitmapIndex + 1)) {
             int high = labelBitmap.select1(nodeId + 1) - 1;
-            if (high >= labelBitmap.size() || labelBitmap.get(high)) {
+            if (labelBitmap.get(high)) {
                 return -1;
             }
             int index = Arrays.binarySearch(labels, bitmapIndex - nodeId, high - nodeId + 1, c);
@@ -265,7 +265,7 @@ public class CharSuccinctTrie implements SuccinctTrie {
 
     @Override
     public String toString() {
-        return "CharSuccinctSet[" + labels.length + " labels, " + labelBitmap.size() + " bits]";
+        return "CharSuccinctTrie[" + labels.length + " labels, " + labelBitmap.size() + " bits]";
     }
 
 }

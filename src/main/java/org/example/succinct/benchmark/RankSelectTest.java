@@ -18,12 +18,10 @@ import it.unimi.dsi.sux4j.bits.SimpleSelect;
 import it.unimi.dsi.sux4j.bits.SparseRank;
 import it.unimi.dsi.sux4j.bits.SparseSelect;
 import org.example.succinct.api.RankSelectBitSet;
-import org.example.succinct.archive.RankSelectBitSet3;
 import org.example.succinct.common.*;
 import org.example.succinct.utils.StringGenerateUtil;
 import org.example.succinct.utils.Timer;
 
-@SuppressWarnings("unused")
 public class RankSelectTest {
     public static void main(String[] args) {
         allTest();
@@ -31,7 +29,7 @@ public class RankSelectTest {
 
     public static void allTest() {
         String[] keys = StringGenerateUtil.randomArray(1000000, 32, 0.0f);
-        RankSelectBitSet bitSet = createLoudsBitSet(new RankSelectBitSet3.Builder(), keys);
+        RankSelectBitSet bitSet = createLoudsBitSet(new RankSelectBitSet4.Builder(), keys);
         System.out.printf("memory: %s\n", sizeOf(bitSet));
         long t = Timer.now();
         for (int i = 0; i < bitSet.size(); i++) {
