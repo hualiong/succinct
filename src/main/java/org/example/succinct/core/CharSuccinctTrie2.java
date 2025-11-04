@@ -19,10 +19,6 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
     private final RankSelectBitSet isCompress;
     private final CharBuffer buffer;
 
-    public RankSelectBitSet test() {
-        return isCompress;
-    }
-
     public static CharSuccinctTrie2 of(String... keys) {
         Arrays.sort(keys);
         return CharSuccinctTrie2.sortedOf(keys);
@@ -239,7 +235,14 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
 
             {
                 charBuffer.append(prefix).flip();
-                if (!isLeaf.get(rootId)) {
+                int parentIndex = labelBitmap.select0(nodeId) + 1, parentId = parentIndex - nodeId;
+                if (isCompress.get(parentId) && !labelBitmap.get(parentIndex)) {
+                    nodeId = parentId;
+                    bitmapIndex = parentIndex;
+                }
+                if (isLeaf.get(rootId)) {
+                    next = charBuffer.toString();
+                } else {
                     advance();
                 }
             }
@@ -252,7 +255,7 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
                     // 撞墙
                     while (labelBitmap.get(bitmapIndex) || bitmapIndex < 0) {
                         // 到达根节点，遍历结束
-                        if (nodeId == rootId) {
+                        if (nodeId <= rootId) {
                             next = null;
                             return;
                         }

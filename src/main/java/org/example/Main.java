@@ -1,10 +1,9 @@
 package org.example;
 
-import org.apache.lucene.util.fst.BytesRefFSTEnum;
-import org.example.succinct.api.SuccinctTrie;
 import org.example.succinct.core.*;
 import org.example.succinct.common.*;
 import org.example.succinct.api.RankSelectBitSet;
+import org.example.succinct.api.SuccinctTrie;
 import org.example.succinct.utils.Recorder;
 import org.example.succinct.utils.StringEncoder;
 import org.example.succinct.utils.StringGenerateUtil;
@@ -13,70 +12,24 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Queue;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import static org.example.succinct.utils.RamUsageUtil.printSizeOf;
 import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 
 @SuppressWarnings({ "ResultOfMethodCallIgnored" })
 public class Main {
     public static void main(String[] args) throws IOException {
-        String[] keys = StringGenerateUtil.randomArray(10000, 32, 0.0f);
-        // String[] keys = new String[] {"ro", "romane", "romae", "rubic", "ruben"};
-        NestedSuccinctTrie nst = NestedSuccinctTrie.of(keys, 10);
-        System.out.println(nst);
-        printSizeOf(nst);
-        printSizeOf(CharSuccinctTrie.sortedOf(keys));
-        // int length = UniqueSort.sort(keys);
-        // for (int i = 0; i < length; i++) {
-        //     int nodeId = nst.index(keys[i]);
-        //     if (nodeId < 0 || !keys[i].equals(nst.get(nodeId))) {
-        //         System.out.println("Fail: " + nst.index(keys[i]));
-        //         return;
-        //     }
-        // }
-        // System.out.println("Success");
+        test();
     }
-
-    public static void iteratorTest(int flag) throws IOException {
-        String[] randoms = StringGenerateUtil.randomArray(1000000, 8, 1.0f);
-        System.out.printf("Data: %s\n", sizeOf(randoms));
-        Arrays.parallelSort(randoms);
-        if ((flag & 1) > 0) {
-            Set<String> set = Arrays.stream(randoms).parallel().collect(Collectors.toSet());
-            long now = Timer.now();
-            set.forEach(s -> {
-            });
-            long ms = Timer.ms(now);
-            System.out.printf("%s: %dms | %s\n", set.getClass().getSimpleName(), ms, sizeOf(set));
-        }
-        if ((flag & 2) > 0) {
-            SimpleFSA fsa = new SimpleFSA(randoms);
-            long now = Timer.now();
-            BytesRefFSTEnum<Object> iter = fsa.iterator();
-            while (iter.next() != null)
-                ;
-            long ms = Timer.ms(now);
-            System.out.printf("%s: %dms | %s\n", fsa.getClass().getSimpleName(), ms, sizeOf(fsa));
-        }
-        if ((flag & 4) > 0) {
-            SuccinctTrie cst = CharSuccinctTrie.sortedOf(randoms);
-            long now = Timer.now();
-            cst.iterator(true).forEachRemaining(s -> {
-            });
-            long ms = Timer.ms(now);
-            System.out.printf("%s: %dms | %s\n", cst.getClass().getSimpleName(), ms, sizeOf(cst));
-        }
-        if ((flag & 8) > 0) {
-            SuccinctTrie bst = ByteSuccinctTrie.of(randoms);
-            long now = Timer.now();
-            bst.iterator(true).forEachRemaining(s -> {
-            });
-            long ms = Timer.ms(now);
-            System.out.printf("%s: %dms | %s\n", bst.getClass().getSimpleName(), ms, sizeOf(bst));
-        }
+    
+    public static void test() {
+        // String[] keys = StringGenerateUtil.randomArray(1000000, 32, 0.0f);
+        // String[] keys = StringGenerateUtil.readArray("D:\\Hualiang\\Study\\JavaWeb\\succinct\\src\\main\\resources\\words.txt");
+        String[] keys = new String[] {"he", "hebo", "hello", "helloworld"};
+        SuccinctTrie cst2 = CharSuccinctTrie2.of(keys);
+        Iterator<String> iter = cst2.prefixSearch("he");
+        iter.forEachRemaining(System.out::println);
     }
 
     public static void bitSetTest() {

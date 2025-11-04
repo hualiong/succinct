@@ -175,7 +175,9 @@ public class CharSuccinctTrie implements SuccinctTrie {
 
             {
                 charBuffer.append(prefix).flip();
-                if (!isLeaf.get(rootId)) {
+                if (isLeaf.get(rootId)) {
+                    next = charBuffer.toString();
+                } else {
                     advance();
                 }
             }
