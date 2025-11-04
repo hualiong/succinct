@@ -114,7 +114,6 @@ public class CharSuccinctTrie implements SuccinctTrie {
         return new TermIterator() {
             private final char[] chars = str.toCharArray();
             private int pos = 0;
-            private int layer = 0;
             private int nodeId = 0;
             private int bitmapIndex = 0;
 
@@ -124,14 +123,12 @@ public class CharSuccinctTrie implements SuccinctTrie {
 
             protected void advance() {
                 while (pos < chars.length) {
-                    int index = labelSearch(nodeId, bitmapIndex, chars[pos], layer < 3);
+                    int index = labelSearch(nodeId, bitmapIndex, chars[pos++], pos <= 3);
                     if (index < 0) {
                         break;
                     }
                     nodeId = index + 1 - nodeId;
                     bitmapIndex = labelBitmap.select1(nodeId) + 1;
-                    layer++;
-                    pos++;
                     if (isLeaf.get(nodeId)) {
                         next = new String(chars, 0, pos);
                         return;
@@ -177,8 +174,7 @@ public class CharSuccinctTrie implements SuccinctTrie {
             private int bitmapIndex = rootId < 0 ? labelBitmap.size() : labelBitmap.select1(rootId) + 1;
 
             {
-                charBuffer.append(prefix);
-                charBuffer.flip();
+                charBuffer.append(prefix).flip();
                 if (!isLeaf.get(rootId)) {
                     advance();
                 }
@@ -187,8 +183,7 @@ public class CharSuccinctTrie implements SuccinctTrie {
             @Override
             protected void advance() {
                 // 切换写模式
-                charBuffer.position(charBuffer.limit());
-                charBuffer.limit(charBuffer.capacity());
+                charBuffer.position(charBuffer.limit()).limit(charBuffer.capacity());
                 while (true) {
                     // 撞墙
                     while (labelBitmap.get(bitmapIndex)) {
@@ -207,8 +202,7 @@ public class CharSuccinctTrie implements SuccinctTrie {
                     nodeId = bitmapIndex + 1 - nodeId;
                     bitmapIndex = labelBitmap.select1(nodeId) + 1;
                     if (isLeaf.get(nodeId)) {
-                        charBuffer.flip();
-                        next = charBuffer.toString();
+                        next = charBuffer.flip().toString();
                         return;
                     }
                 }

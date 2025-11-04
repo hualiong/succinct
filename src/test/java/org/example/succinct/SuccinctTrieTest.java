@@ -16,8 +16,8 @@ import java.util.TreeSet;
 import java.util.function.Function;
 
 public class SuccinctTrieTest {
-    static final int COUNT = 10000;
-    final Function<String[], SuccinctTrie> constructor = NestedSuccinctTrie::of;
+    static final int COUNT = 20000;
+    final Function<String[], SuccinctTrie> constructor = CharSuccinctTrie2::of;
     String[] unordered;
     Set<String> unique = new TreeSet<>();
     SuccinctTrie trie;
@@ -26,7 +26,7 @@ public class SuccinctTrieTest {
     public void setUp() {
         unordered = StringGenerateUtil.randomArray(COUNT, 0, 10, 0.5f);
         unique = new TreeSet<>();
-        String[] half = Arrays.copyOf(unordered, COUNT / 2);
+        String[] half = Arrays.copyOf(unordered, unordered.length / 2);
         unique.addAll(Arrays.asList(half));
         trie = constructor.apply(half);
     }
@@ -37,6 +37,9 @@ public class SuccinctTrieTest {
         Arrays.setAll(array, i -> i);
         for (String random : unordered) {
             int index = trie.index(random);
+            if (unique.contains(random) != index >= 0) {
+                trie.index(random);
+            }
             assertEquals(unique.contains(random), index >= 0);
             if (index >= 0) {
                 assertEquals(random, trie.get(index));

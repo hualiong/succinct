@@ -19,6 +19,10 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
     private final RankSelectBitSet isCompress;
     private final CharBuffer buffer;
 
+    public RankSelectBitSet test() {
+        return isCompress;
+    }
+
     public static CharSuccinctTrie2 of(String... keys) {
         Arrays.sort(keys);
         return CharSuccinctTrie2.sortedOf(keys);
@@ -153,7 +157,8 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
         return new TermIterator() {
             private final char[] chars = str.toCharArray();
             private int pos = 0;
-            private int[] state = new int[2]; // nodeId + bitmapIndex
+            private int nodeId = 0;
+            private int bitmapIndex = 0;
 
             {
                 if (!isLeaf.get(0)) {
@@ -162,12 +167,35 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
             }
 
             protected void advance() {
-                int index;
-                while (pos < chars.length && (index = moveDown(state, chars, pos)) >= 0) {
-                    pos = index;
-                    if (isLeaf.get(state[0])) {
-                        next = new String(chars, 0, pos);
-                        return;
+                while (pos < chars.length && bitmapIndex >= 0) {
+                    if (isCompress.get(nodeId)) {
+                        while (!labelBitmap.get(bitmapIndex) && pos < chars.length) {
+                            int labelIndex = bitmapIndex++ - nodeId;
+                            if (labels[labelIndex] != chars[pos]) {
+                                bitmapIndex = 0;
+                                break;
+                            } else {
+                                pos++;
+                                if (isLeaf.get(labelIndex + 1)) {
+                                    if (labelBitmap.get(bitmapIndex)) {
+                                        break;
+                                    }
+                                    next = new String(chars, 0, pos);
+                                    return;
+                                }
+                            }
+                        }
+                        bitmapIndex--;
+                    } else {
+                        bitmapIndex = labelSearch(nodeId, bitmapIndex, chars[pos++], pos <= 3);
+                    }
+                    if (bitmapIndex >= 0) {
+                        nodeId = bitmapIndex + 1 - nodeId;
+                        bitmapIndex = labelBitmap.select1(nodeId) + 1;
+                        if (isLeaf.get(nodeId)) {
+                            next = new String(chars, 0, pos);
+                            return;
+                        }
                     }
                 }
                 next = null;
@@ -205,13 +233,12 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
 
     private Iterator<String> dfs(int rootId, String prefix) {
         return new TermIterator() {
-            private final CharBuffer charBuffer = CharBuffer.allocate(256);
+            private final CharBuffer charBuffer = CharBuffer.allocate(buffer.capacity());
             private int nodeId = rootId;
-            private int bitmapIndex = rootId < 0 ? labelBitmap.size() : labelBitmap.select1(rootId) + 1;
+            private int bitmapIndex = rootId < 0 ? labelBitmap.size() - 1 : labelBitmap.select1(rootId) + 1;
 
             {
-                charBuffer.append(prefix);
-                charBuffer.flip();
+                charBuffer.append(prefix).flip();
                 if (!isLeaf.get(rootId)) {
                     advance();
                 }
@@ -220,11 +247,10 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
             @Override
             protected void advance() {
                 // 切换写模式
-                charBuffer.position(charBuffer.limit());
-                charBuffer.limit(charBuffer.capacity());
+                charBuffer.position(charBuffer.limit()).limit(charBuffer.capacity());
                 while (true) {
                     // 撞墙
-                    while (bitmapIndex >= labelBitmap.size() || labelBitmap.get(bitmapIndex)) {
+                    while (labelBitmap.get(bitmapIndex) || bitmapIndex < 0) {
                         // 到达根节点，遍历结束
                         if (nodeId == rootId) {
                             next = null;
@@ -233,16 +259,30 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
                         // 回溯并向右转移
                         bitmapIndex = labelBitmap.select0(nodeId) + 1;
                         nodeId = bitmapIndex - nodeId;
-                        charBuffer.position(charBuffer.position() - 1);
+                        if (isCompress.get(nodeId)) {
+                            int pos = charBuffer.position();
+                            while (--bitmapIndex >= 0 && !labelBitmap.get(bitmapIndex)) pos--;
+                            charBuffer.position(pos);
+                        } else {
+                            charBuffer.position(charBuffer.position() - 1);
+                        }
                     }
                     // 向下转移
+                    if (isCompress.get(nodeId)) {
+                        while (!labelBitmap.get(bitmapIndex + 1)) {
+                            int labelIndex = bitmapIndex++ - nodeId;
+                            charBuffer.put(labels[labelIndex]);
+                            if (isLeaf.get(labelIndex + 1)) {
+                                next = charBuffer.flip().toString();
+                                return;
+                            }
+                        }
+                    }
                     nodeId = bitmapIndex + 1 - nodeId;
                     bitmapIndex = labelBitmap.select1(nodeId) + 1;
-                    
                     charBuffer.put(labels[nodeId - 1]);
                     if (isLeaf.get(nodeId)) {
-                        charBuffer.flip();
-                        next = charBuffer.toString();
+                        next = charBuffer.flip().toString();
                         return;
                     }
                 }
@@ -251,43 +291,30 @@ public class CharSuccinctTrie2 implements SuccinctTrie {
     }
 
     private int extract(String key) {
-        buffer.append(key);
-        buffer.flip();
-        int pos = 0;
-        int[] state = new int[2];
-        while (buffer.hasRemaining() && (pos = moveDown(state, buffer)) >= 0) {
-            buffer.position(pos);
-        }
-        buffer.clear();
-        return pos >= 0 ? state[0] : -1;
-    }
-
-    private int moveDown(int[] state, char[] chars, int i) {
-        return moveDown(state, chars, chars.length, i);
-    }
-
-    private int moveDown(int[] state, CharBuffer buffer) {
-        return moveDown(state, buffer.array(), buffer.limit(), buffer.position());
-    }
-
-    private int moveDown(int[] state, char[] chars, int length, int i) {
-        int index = state[1];
-        if (isCompress.get(state[0])) {
-            while (!labelBitmap.get(index) && i < length) {
-                if (labels[index++ - state[0]] != chars[i++]) {
-                    return -1;
-                }
-            }
-            index--;
-        } else {
-            index = labelSearch(state[0], state[1], chars[i], i++ < 3);
-        }
-        if (index < 0) {
+        if (key.length() > buffer.capacity()) {
             return -1;
         }
-        state[0] = index + 1 - state[0];
-        state[1] = labelBitmap.select1(state[0]) + 1;
-        return i; 
+        buffer.append(key).flip();
+        int nodeId = 0, bitmapIndex = 0;
+        while (buffer.hasRemaining() && bitmapIndex >= 0) {
+            if (isCompress.get(nodeId)) {
+                while (!labelBitmap.get(bitmapIndex) && buffer.hasRemaining()) {
+                    if (labels[bitmapIndex++ - nodeId] != buffer.get()) {
+                        bitmapIndex = 0;
+                        break;
+                    }
+                }
+                bitmapIndex--;
+            } else {
+                bitmapIndex = labelSearch(nodeId, bitmapIndex, buffer.get(), buffer.position() <= 3);
+            }
+            if (bitmapIndex >= 0) {
+                nodeId = bitmapIndex + 1 - nodeId;
+                bitmapIndex = labelBitmap.select1(nodeId) + 1;
+            }
+        }
+        buffer.clear();
+        return bitmapIndex >= 0 ? nodeId : -1;
     }
 
     /**
