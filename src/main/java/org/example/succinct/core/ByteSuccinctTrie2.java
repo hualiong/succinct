@@ -14,18 +14,18 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Queue;
 
-public class ByteSuccinctTrie implements SuccinctTrie {
+public class ByteSuccinctTrie2 implements SuccinctTrie {
     private final byte[] labels;
     private final RankSelectBitSet labelBitmap;
     private final RankSelectBitSet isLeaf;
     private final StringEncoder encoder;
     private final byte[] buffer;
 
-    public static ByteSuccinctTrie of(String... keys) {
-        return ByteSuccinctTrie.of(keys, "GB18030");
+    public static ByteSuccinctTrie2 of(String... keys) {
+        return ByteSuccinctTrie2.of(keys, "GB18030");
     }
 
-    public static ByteSuccinctTrie of(String[] keys, String charset) {
+    public static ByteSuccinctTrie2 of(String[] keys, String charset) {
         StringEncoder encoder = new StringEncoder(Charset.forName(charset));
         byte[][] keyBytes = Arrays.stream(keys).map(encoder::getBytes).toArray(byte[][]::new);
         // 按字节数组字典序排序
@@ -74,14 +74,14 @@ public class ByteSuccinctTrie implements SuccinctTrie {
             // 设置节点结束标记(1)
             labelBitmapBuilder.set(bitPos++, true);
         }
-        return new ByteSuccinctTrie(
+        return new ByteSuccinctTrie2(
                 labels.toByteArray(),
                 labelBitmapBuilder.build(true),
                 isLeafBuilder.build(false),
                 encoder, maxLen);
     }
 
-    private ByteSuccinctTrie(byte[] labels, RankSelectBitSet labelBitmap, RankSelectBitSet isLeaf,
+    private ByteSuccinctTrie2(byte[] labels, RankSelectBitSet labelBitmap, RankSelectBitSet isLeaf,
                             StringEncoder encoder, int maxLen) {
         this.labels = labels;
         this.labelBitmap = labelBitmap;
@@ -275,7 +275,7 @@ public class ByteSuccinctTrie implements SuccinctTrie {
 
     @Override
     public String toString() {
-        return String.format("ByteSuccinctSet4(%s)[%d labels, %d bits]", encoder.charset(), labels.length,
+        return String.format("ByteSuccinctTrie(%s)[%d labels, %d bits]", encoder.charset(), labels.length,
                 labelBitmap.size());
     }
 }

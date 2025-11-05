@@ -123,7 +123,7 @@ public class CharSuccinctTrie implements SuccinctTrie {
 
             protected void advance() {
                 while (pos < chars.length) {
-                    int index = labelSearch(nodeId, bitmapIndex, chars[pos++], pos <= 3);
+                    int index = labelSearch(nodeId, bitmapIndex, chars[pos++], pos < 3);
                     if (index < 0) {
                         break;
                     }

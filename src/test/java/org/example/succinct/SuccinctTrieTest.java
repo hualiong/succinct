@@ -17,14 +17,15 @@ import java.util.function.Function;
 
 public class SuccinctTrieTest {
     static final int COUNT = 20000;
-    final Function<String[], SuccinctTrie> constructor = CharSuccinctTrie2::of;
+    final Function<String[], SuccinctTrie> constructor = ByteSuccinctTrie2::of;
     String[] unordered;
     Set<String> unique = new TreeSet<>();
     SuccinctTrie trie;
 
     @Before
     public void setUp() {
-        unordered = StringGenerateUtil.randomArray(COUNT, 0, 10, 0.5f);
+        unordered = StringGenerateUtil.readArray();
+        // unordered = StringGenerateUtil.randomArray(COUNT, 0, 8, 0.5f);
         unique = new TreeSet<>();
         String[] half = Arrays.copyOf(unordered, unordered.length / 2);
         unique.addAll(Arrays.asList(half));
@@ -51,8 +52,14 @@ public class SuccinctTrieTest {
 
     @Test
     public void dfsTest() {
-        if (!(trie instanceof ByteSuccinctTrie)) {
-            Iterator<String> iterator = trie.iterator(true);
+        Iterator<String> iterator = trie.iterator(true);
+        if (trie instanceof ByteSuccinctTrie || trie instanceof ByteSuccinctTrie2) {
+            while (!unique.isEmpty()) {
+                String next = iterator.next();
+                assertTrue(unique.contains(next));
+                unique.remove(next);
+            }
+        } else {
             for (String s : unique) {
                 assertEquals(s, iterator.next());
             }

@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 
 public class StringGenerateUtil {
     // 预定义字符集
+    private static final String WORDS_TXT = "src/main/resources/words.txt";
     private static final char[] ENGLISH_CHARS;
     private static final char[] CHINESE_CHARS;
     private static final Random random = new Random();
@@ -106,6 +107,10 @@ public class StringGenerateUtil {
             array[i] = UUID.randomUUID().toString();
         }
         return array;
+    }
+
+    public static String[] readArray() {
+        return readArray(WORDS_TXT);
     }
 
     public static String[] readArray(String filePath) {

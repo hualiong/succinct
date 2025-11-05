@@ -15,12 +15,12 @@ import java.util.stream.Collectors;
 import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 
 public class SuccinctTrieTest {
-    public static void main(String[] args) {
-        containsTest();
+    public static void main(String[] args) throws IOException {
+        iteratorTest(29);
     }
 
     public static void containsTest() {
-        String[] randoms = StringGenerateUtil.randomArray(1000000,  2, 14, 0.0f);
+        String[] randoms = StringGenerateUtil.readArray();
         Arrays.parallelSort(randoms);
         // PatriciaTrie pTrie = new PatriciaTrie();
         // for (String random : randoms) {
@@ -30,7 +30,7 @@ public class SuccinctTrieTest {
         SuccinctTrie bss = ByteSuccinctTrie.of(randoms);
         SuccinctTrie cst2 = CharSuccinctTrie2.sortedOf(randoms);
         SuccinctTrie css = CharSuccinctTrie.sortedOf(randoms);
-        // SuccinctTrie nst = NestedSuccinctTrie.sortedOf(randoms, 4);
+        SuccinctTrie nst = NestedSuccinctTrie.sortedOf(randoms, 4);
         SimpleFSA fsa = new SimpleFSA(randoms);
         Recorder t = new Recorder();
         System.out.printf("Data: %s\n", sizeOf(randoms));
@@ -42,9 +42,9 @@ public class SuccinctTrieTest {
         t.reset();
         t.multi(randoms, css::contains);
         System.out.printf("%s: %dms | %s\n", css.getClass().getSimpleName(), t.sum(), sizeOf(css));
-        // t.reset();
-        // t.multi(randoms, nst::contains);
-        // System.out.printf("%s: %dms | %s\n", nst.getClass().getSimpleName(), t.sum(), sizeOf(nst));
+        t.reset();
+        t.multi(randoms, nst::contains);
+        System.out.printf("%s: %dms | %s\n", nst.getClass().getSimpleName(), t.sum(), sizeOf(nst));
         // t.reset();
         // t.multi(randoms, trie::contains);
         // System.out.printf("%s: %dms | %s\n", trie.getClass().getSimpleName(), t.sum(), sizeOf(trie));
@@ -53,8 +53,8 @@ public class SuccinctTrieTest {
         System.out.printf("%s: %dms | %s\n", fsa.getClass().getSimpleName(), t.sum(), sizeOf(fsa));
     }
     
-    public static void getTest(int count) {
-        String[] randoms = StringGenerateUtil.readArray("D:\\Hualiang\\Study\\JavaWeb\\succinct\\src\\main\\resources\\words.txt");
+    public static void getTest() {
+        String[] randoms = StringGenerateUtil.readArray();
         CharSuccinctTrie cst = CharSuccinctTrie.of(randoms);
         CharSuccinctTrie2 cst2 = CharSuccinctTrie2.sortedOf(randoms);
         ByteSuccinctTrie bst = ByteSuccinctTrie.of(randoms);
