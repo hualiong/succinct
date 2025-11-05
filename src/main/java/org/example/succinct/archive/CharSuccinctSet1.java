@@ -8,7 +8,6 @@ import java.util.*;
 /**
  * 基于 char 数组实现的第一代 Succinct Set
  */
-@SuppressWarnings("unused")
 public class CharSuccinctSet1 {
     private final char[] labels;
     private final RankSelectBitSet labelBitmap;

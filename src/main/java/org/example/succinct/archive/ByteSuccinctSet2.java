@@ -11,7 +11,6 @@ import java.util.*;
 /**
  * 基于 byte 数组实现的第二代 Succinct Set
  */
-@SuppressWarnings("unused")
 public class ByteSuccinctSet2 {
     private final Charset charset;
     private final byte[] labels;

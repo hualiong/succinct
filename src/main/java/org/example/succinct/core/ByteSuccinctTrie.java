@@ -42,7 +42,7 @@ public class ByteSuccinctTrie implements SuccinctTrie {
             return a.length - b.length;
         });
         ByteArrayList labels = new ByteArrayList();
-        // TODO RankSelectBitSet4 的实际表现要比 RankSelectBitSet3 慢，需要排查原因
+        // RankSelectBitSet4 的实际表现要比 RankSelectBitSet3 慢，需要排查原因
         RankSelectBitSet.Builder labelBitmapBuilder = new RankSelectBitSet4.Builder();
         RankSelectBitSet.Builder isLeafBuilder = new RankSelectBitSet4.Builder();
 

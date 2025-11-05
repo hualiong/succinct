@@ -12,7 +12,6 @@ import java.util.Queue;
 /**
  * 基于 char 数组实现的第三代 Succinct Set
  */
-@SuppressWarnings("unused")
 public class CharSuccinctSet3 {
     private final char[] buffer = new char[128];
     private final char[] labels;

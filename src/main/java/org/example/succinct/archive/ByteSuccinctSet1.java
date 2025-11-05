@@ -9,7 +9,6 @@ import java.util.*;
 /**
  * 基于 byte 数组实现的第一代 Succinct Set
  */
-@SuppressWarnings("unused")
 public class ByteSuccinctSet1 {
     private final Charset charset;
     private final byte[] labels;

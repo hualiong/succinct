@@ -13,7 +13,6 @@ import java.util.*;
 /**
  * 基于 byte 数组实现的第三代 Succinct Set
  */
-@SuppressWarnings("unused")
 public class ByteSuccinctSet3 {
     private final byte[] labels;
     private final RankSelectBitSet labelBitmap;

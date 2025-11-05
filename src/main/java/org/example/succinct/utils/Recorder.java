@@ -3,7 +3,6 @@ package org.example.succinct.utils;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-@SuppressWarnings("unused")
 public class Recorder {
     private long times = 0L;
     private long count = 0L;

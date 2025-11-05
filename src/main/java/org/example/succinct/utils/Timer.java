@@ -1,6 +1,5 @@
 package org.example.succinct.utils;
 
-@SuppressWarnings("unused")
 public class Timer {
     public static long now() {
         return System.currentTimeMillis();

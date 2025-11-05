@@ -6,7 +6,6 @@ import it.unimi.dsi.sux4j.bits.RankSelect;
 import it.unimi.dsi.sux4j.bits.SparseSelect;
 import org.example.succinct.api.RankSelectBitSet;
 
-@SuppressWarnings("unused")
 public class RankSelectBitSet3 implements RankSelectBitSet {
     private final LongArrayBitVector bits;
     private final RankSelect rankSelect;

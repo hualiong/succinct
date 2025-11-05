@@ -12,7 +12,6 @@ import java.util.Queue;
 /**
  * 基于 char 数组实现的第二代 Succinct Set
  */
-@SuppressWarnings("unused")
 public class CharSuccinctSet2 {
     private final char[] labels;
     private final RankSelectBitSet labelBitmap;
