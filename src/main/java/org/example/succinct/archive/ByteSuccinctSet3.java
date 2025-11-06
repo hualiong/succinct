@@ -28,7 +28,7 @@ public class ByteSuccinctSet3 {
         encoder = new StringEncoder(Charset.forName(charset));
         byte[][] keyBytes = new byte[keys.length][];
         for (int i = 0; i < keys.length; i++) {
-            keyBytes[i] = encoder.getBytes(keys[i]);
+            keyBytes[i] = encoder.getBytesSafely(keys[i]);
         }
         // 按字节数组字典序排序
         Arrays.parallelSort(keyBytes, (a, b) -> {
@@ -127,7 +127,7 @@ public class ByteSuccinctSet3 {
     }
 
     private int extract(String key) {
-        ByteBuffer buffer = encoder.encodeToBuffer(key);
+        ByteBuffer buffer = encoder.encodeToBufferSafely(key);
         int nodeId = 0, bitmapIndex = 0;
         buffer.rewind();
         while (buffer.hasRemaining()) {

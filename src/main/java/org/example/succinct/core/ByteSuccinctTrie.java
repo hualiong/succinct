@@ -27,7 +27,7 @@ public class ByteSuccinctTrie implements SuccinctTrie {
 
     public static ByteSuccinctTrie of(String[] keys, String charset) {
         StringEncoder encoder = new StringEncoder(Charset.forName(charset));
-        byte[][] keyBytes = Arrays.stream(keys).map(encoder::getBytes).toArray(byte[][]::new);
+        byte[][] keyBytes = Arrays.stream(keys).map(encoder::getBytesSafely).toArray(byte[][]::new);
         // 按字节数组字典序排序
         Arrays.sort(keyBytes, (a, b) -> {
             int minLen = Math.min(a.length, b.length);
@@ -127,7 +127,7 @@ public class ByteSuccinctTrie implements SuccinctTrie {
     @Override
     public Iterator<String> prefixKeysOf(String str) {
         return new TermIterator() {
-            private final byte[] bytes = encoder.getBytes(str);
+            private final byte[] bytes = encoder.getBytesSafely(str);
             private int pos = 0;
             private int nodeId = 0;
             private int bitmapIndex = 0;
@@ -187,7 +187,7 @@ public class ByteSuccinctTrie implements SuccinctTrie {
         if (key.length() > buffer.length) {
             return -1;
         }
-        ByteBuffer buffer = encoder.encodeToBuffer(key);
+        ByteBuffer buffer = encoder.encodeToBufferSafely(key);
         int nodeId = 0, bitmapIndex = 0;
         buffer.rewind();
         while (buffer.hasRemaining()) {
@@ -208,7 +208,7 @@ public class ByteSuccinctTrie implements SuccinctTrie {
             private int bitmapIndex = rootId < 0 ? labelBitmap.size() : labelBitmap.select1(rootId) + 1;
 
             {
-                byteBuffer.put(encoder.getBytes(prefix)).flip();
+                byteBuffer.put(encoder.getBytesSafely(prefix)).flip();
                 if (!isLeaf.get(rootId)) {
                     advance();
                 }

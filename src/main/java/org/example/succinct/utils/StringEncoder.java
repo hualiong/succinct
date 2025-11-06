@@ -6,7 +6,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
-import java.util.Arrays;
 
 public class StringEncoder {
     private final CharsetEncoder encoder;
@@ -19,12 +18,20 @@ public class StringEncoder {
                 .onUnmappableCharacter(CodingErrorAction.REPLACE);
 
         // 初始分配1024字节缓冲区
-        this.byteBuffer = ByteBuffer.allocate(512);
-        this.charBuffer = CharBuffer.allocate(256);
+        this.byteBuffer = ByteBuffer.allocate(8);
+        this.charBuffer = CharBuffer.allocate(16);
     }
 
     public Charset charset() {
         return encoder.charset();
+    }
+    
+    public ByteBuffer byteBuffer() {
+        return byteBuffer;
+    }
+
+    public int maxBytes(int length) {
+        return (int) (length * encoder.maxBytesPerChar());
     }
 
     public static int getUTF8Bytes(String s, int off, int len, byte[] out, int outOff) {
@@ -70,10 +77,6 @@ public class StringEncoder {
         return upto;
     }
 
-    /**
-     * 提取字符到外部提供的缓冲区
-     * @return 实际复制的字符数
-     */
     public static int getChars(String str, char[] dest) {
         int length = Math.min(str.length(), dest.length);
         if (length == 0){
@@ -83,9 +86,11 @@ public class StringEncoder {
         return length;
     }
 
-    /**
-     * 将字符串编码为字节数组（创建新数组）
-     */
+    public byte[] getBytesSafely(String str) {
+        checkCapacity(str);
+        return getBytes(str);
+    }
+    
     public byte[] getBytes(String str) {
         encodeToBuffer(str);
         byte[] bytes = new byte[byteBuffer.remaining()];
@@ -93,59 +98,13 @@ public class StringEncoder {
         return bytes;
     }
 
-    /**
-     * 将字符编码为字节数组（创建新数组）
-     */
-    public byte[] getBytes(char ch) {
-        // 优化：ASCII 字符（0-127）直接返回单字节
-        if (ch <= 127 && encoder.canEncode(ch)) {
-            return new byte[] { (byte) ch };
-        }
-        ByteBuffer buffer = encodeToBuffer(ch);
-        byte[] bytes = new byte[buffer.remaining()];
-        buffer.get(bytes);
-        return bytes;
+    public ByteBuffer encodeToBufferSafely(String str) {
+        checkCapacity(str);
+        return encodeToBuffer(str);
     }
-
-    /**
-     * 将单个 char 编码到复用的 ByteBuffer（零拷贝）
-     * 注意：返回的 ByteBuffer 内容会在下次编码时被覆盖
-     */
-    public ByteBuffer encodeToBuffer(char ch) {
-        // 复用 CharBuffer
-        charBuffer.clear().put(ch).flip();
-
-        // 复用 ByteBuffer
-        byteBuffer.clear();
-
-        // 执行编码
-        encoder.reset();
-        CoderResult result = encoder.encode(charBuffer, byteBuffer, true);
-        assert result.isUnderflow() : "编码失败: " + result;
-        result = encoder.flush(byteBuffer);
-        assert result.isUnderflow() : "刷新失败: " + result;
-
-        return byteBuffer.flip(); // 准备读取 
-    }
-
-    /**
-     * 将字符串编码到复用的ByteBuffer（零拷贝）
-     * 注意：返回的ByteBuffer内容会在下次编码时被覆盖
-     */
+    
     public ByteBuffer encodeToBuffer(String str) {
-        // 确保字符缓冲区足够大
-        if (charBuffer.capacity() < str.length()) {
-            charBuffer = CharBuffer.allocate(str.length());
-        }
         charBuffer.clear().put(str).flip();
-
-        // 计算所需最大字节空间
-        int maxBytes = (int) (str.length() * encoder.maxBytesPerChar());
-
-        // 确保字节缓冲区足够大
-        if (byteBuffer.capacity() < maxBytes) {
-            byteBuffer = ByteBuffer.allocate(maxBytes);
-        }
         byteBuffer.clear();
 
         // 执行编码
@@ -156,5 +115,20 @@ public class StringEncoder {
         assert result.isUnderflow() : "Encoding failed";
 
         return byteBuffer.flip(); // 准备读取
+    }
+
+    public void checkCapacity(String str) {
+        if (charBuffer.capacity() < str.length()) {
+            charBuffer = CharBuffer.allocate(str.length());
+        }
+        int maxBytes = maxBytes(str.length());
+        if (byteBuffer.capacity() < maxBytes) {
+            byteBuffer = ByteBuffer.allocate(maxBytes);
+        }
+    }
+
+    public boolean checkByteCapacity(String str) {
+        int maxBytes = maxBytes(str.length());
+        return byteBuffer.capacity() >= maxBytes;
     }
 }

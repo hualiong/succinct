@@ -16,35 +16,39 @@ import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 
 public class SuccinctTrieTest {
     public static void main(String[] args) throws IOException {
-        iteratorTest(29);
+        containsTest();
     }
 
     public static void containsTest() {
-        String[] randoms = StringGenerateUtil.readArray();
+        String[] randoms = StringGenerateUtil.randomArray(1000000, 16, 1.0f);
         Arrays.parallelSort(randoms);
         // PatriciaTrie pTrie = new PatriciaTrie();
         // for (String random : randoms) {
         //     pTrie.insert(random);
         // }
         // InlinedTailLOUDSTrie trie = new InlinedTailLOUDSTrie(pTrie);
-        SuccinctTrie bss = ByteSuccinctTrie.of(randoms);
+        SuccinctTrie bst2 = ByteSuccinctTrie2.of(randoms);
+        SuccinctTrie bst = ByteSuccinctTrie.of(randoms);
         SuccinctTrie cst2 = CharSuccinctTrie2.sortedOf(randoms);
-        SuccinctTrie css = CharSuccinctTrie.sortedOf(randoms);
-        SuccinctTrie nst = NestedSuccinctTrie.sortedOf(randoms, 4);
+        SuccinctTrie cst = CharSuccinctTrie.sortedOf(randoms);
+        // SuccinctTrie nst = NestedSuccinctTrie.sortedOf(randoms, 4);
         SimpleFSA fsa = new SimpleFSA(randoms);
         Recorder t = new Recorder();
         System.out.printf("Data: %s\n", sizeOf(randoms));
-        t.multi(randoms, bss::contains);
-        System.out.printf("%s: %dms | %s\n", bss.getClass().getSimpleName(), t.sum(), sizeOf(bss));
+        t.multi(randoms, bst2::contains);
+        System.out.printf("%s: %dms | %s\n", bst2.getClass().getSimpleName(), t.sum(), sizeOf(bst2));
+        t.reset();
+        t.multi(randoms, bst::contains);
+        System.out.printf("%s: %dms | %s\n", bst.getClass().getSimpleName(), t.sum(), sizeOf(bst));
         t.reset();
         t.multi(randoms, cst2::contains);
         System.out.printf("%s: %dms | %s\n", cst2.getClass().getSimpleName(), t.sum(), sizeOf(cst2));
         t.reset();
-        t.multi(randoms, css::contains);
-        System.out.printf("%s: %dms | %s\n", css.getClass().getSimpleName(), t.sum(), sizeOf(css));
-        t.reset();
-        t.multi(randoms, nst::contains);
-        System.out.printf("%s: %dms | %s\n", nst.getClass().getSimpleName(), t.sum(), sizeOf(nst));
+        t.multi(randoms, cst::contains);
+        System.out.printf("%s: %dms | %s\n", cst.getClass().getSimpleName(), t.sum(), sizeOf(cst));
+        // t.reset();
+        // t.multi(randoms, nst::contains);
+        // System.out.printf("%s: %dms | %s\n", nst.getClass().getSimpleName(), t.sum(), sizeOf(nst));
         // t.reset();
         // t.multi(randoms, trie::contains);
         // System.out.printf("%s: %dms | %s\n", trie.getClass().getSimpleName(), t.sum(), sizeOf(trie));

@@ -24,12 +24,10 @@ public class Main {
     }
     
     public static void test() {
-        // String[] keys = StringGenerateUtil.randomArray(1000000, 32, 0.0f);
+        String[] keys = StringGenerateUtil.randomArray(100000, 32, 0.0f);
         // String[] keys = StringGenerateUtil.readArray("D:\\Hualiang\\Study\\JavaWeb\\succinct\\src\\main\\resources\\words.txt");
-        String[] keys = new String[] {"he", "hebo", "hello", "helloworld"};
-        SuccinctTrie cst2 = CharSuccinctTrie2.of(keys);
-        Iterator<String> iter = cst2.prefixSearch("he");
-        iter.forEachRemaining(System.out::println);
+        // String[] keys = new String[] {"he", "hebo", "hello", "helloworld"};
+        SuccinctTrie cst2 = ByteSuccinctTrie2.of(keys);
     }
 
     public static void bitSetTest() {
@@ -81,10 +79,10 @@ public class Main {
         t.multi(str, String::getBytes);
         System.out.println("UTF-8: " + t.sum() + "ms");
         t.reset();
-        t.multi(str, encoder::encodeToBytes);
-        System.out.println(charset + "(encodeToBytes): " + t.sum() + "ms");
+        t.multi(str, encoder::getBytesSafely);
+        System.out.println(charset + "(getBytes): " + t.sum() + "ms");
         t.reset();
-        t.multi(str, encoder::encodeToBuffer);
+        t.multi(str, encoder::encodeToBufferSafely);
         System.out.println(charset + "(encodeToBuffer): " + t.sum() + "ms");
         t.reset();
         t.multi(str, s -> s.getBytes(Charset.forName(charset)));
