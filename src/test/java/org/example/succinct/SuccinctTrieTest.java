@@ -1,6 +1,7 @@
 package org.example.succinct;
 
 import org.example.succinct.api.SuccinctTrie;
+import org.example.succinct.common.CompactRadixTree;
 import org.example.succinct.core.*;
 import org.example.succinct.utils.StringGenerateUtil;
 import org.junit.Before;
@@ -17,15 +18,15 @@ import java.util.function.Function;
 
 public class SuccinctTrieTest {
     static final int COUNT = 20000;
-    final Function<String[], SuccinctTrie> constructor = ByteSuccinctTrie2::of;
+    final Function<String[], SuccinctTrie> constructor = CompactRadixTree::new;
     String[] unordered;
     Set<String> unique = new TreeSet<>();
     SuccinctTrie trie;
 
     @Before
     public void setUp() {
-        unordered = StringGenerateUtil.readArray();
-        // unordered = StringGenerateUtil.randomArray(COUNT, 0, 8, 0.5f);
+        // unordered = StringGenerateUtil.readArray();
+        unordered = StringGenerateUtil.randomArray(COUNT, 0, 8, 0.5f);
         unique = new TreeSet<>();
         String[] half = Arrays.copyOf(unordered, unordered.length / 2);
         unique.addAll(Arrays.asList(half));
@@ -40,7 +41,7 @@ public class SuccinctTrieTest {
             int index = trie.index(random);
             if (unique.contains(random) != index >= 0) {
                 trie.index(random);
-            }
+            }   
             assertEquals(unique.contains(random), index >= 0);
             if (index >= 0) {
                 assertEquals(random, trie.get(index));

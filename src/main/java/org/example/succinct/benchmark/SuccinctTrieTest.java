@@ -3,30 +3,32 @@ package org.example.succinct.benchmark;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.example.succinct.api.SuccinctTrie;
 import org.example.succinct.common.SimpleFSA;
+import org.example.succinct.common.CompactRadixTree;
 import org.example.succinct.core.*;
 import org.example.succinct.utils.Recorder;
 import org.example.succinct.utils.StringGenerateUtil;
 import org.example.succinct.utils.Timer;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.example.succinct.utils.RamUsageUtil.sizeOf;
 
 public class SuccinctTrieTest {
     public static void main(String[] args) throws IOException {
-        containsTest();
+        // iteratorTest(63);
+        // containsTest();
+        memoryTest();
     }
 
     public static void containsTest() {
-        String[] randoms = StringGenerateUtil.randomArray(1000000, 16, 1.0f);
+        String[] randoms = StringGenerateUtil.randomArray(1000000, 2, 14, 1.0f);
         Arrays.parallelSort(randoms);
         // PatriciaTrie pTrie = new PatriciaTrie();
         // for (String random : randoms) {
         //     pTrie.insert(random);
         // }
         // InlinedTailLOUDSTrie trie = new InlinedTailLOUDSTrie(pTrie);
+        SuccinctTrie srt = new CompactRadixTree(randoms);
         SuccinctTrie bst2 = ByteSuccinctTrie2.of(randoms);
         SuccinctTrie bst = ByteSuccinctTrie.of(randoms);
         SuccinctTrie cst2 = CharSuccinctTrie2.sortedOf(randoms);
@@ -35,6 +37,9 @@ public class SuccinctTrieTest {
         SimpleFSA fsa = new SimpleFSA(randoms);
         Recorder t = new Recorder();
         System.out.printf("Data: %s\n", sizeOf(randoms));
+        t.multi(randoms, srt::contains);
+        System.out.printf("%s: %dms | %s\n", srt.getClass().getSimpleName(), t.sum(), sizeOf(srt));
+        t.reset();
         t.multi(randoms, bst2::contains);
         System.out.printf("%s: %dms | %s\n", bst2.getClass().getSimpleName(), t.sum(), sizeOf(bst2));
         t.reset();
@@ -58,11 +63,13 @@ public class SuccinctTrieTest {
     }
     
     public static void getTest() {
-        String[] randoms = StringGenerateUtil.readArray();
-        CharSuccinctTrie cst = CharSuccinctTrie.of(randoms);
-        CharSuccinctTrie2 cst2 = CharSuccinctTrie2.sortedOf(randoms);
-        ByteSuccinctTrie bst = ByteSuccinctTrie.of(randoms);
-        NestedSuccinctTrie nst = NestedSuccinctTrie.sortedOf(randoms, 2);
+        String[] randoms = StringGenerateUtil.randomArray(100000, 10, 1.0f);
+        // String[] randoms = StringGenerateUtil.readArray();
+        SuccinctTrie cst = CharSuccinctTrie.of(randoms);
+        SuccinctTrie cst2 = CharSuccinctTrie2.sortedOf(randoms);
+        SuccinctTrie bst = ByteSuccinctTrie.of(randoms);
+        SuccinctTrie bst2 = ByteSuccinctTrie2.of(randoms);
+        // NestedSuccinctTrie nst = NestedSuccinctTrie.sortedOf(randoms, 2);
         int size = (int) bst.nodeCount();
         long t = Timer.now(); 
         for (int i = 0; i < size; i++) {
@@ -70,34 +77,34 @@ public class SuccinctTrieTest {
         }
         long t0 = Timer.now(); 
         for (int i = 0; i < size; i++) {
-            bst.get(i);
+            cst.get(i);
         }
         long t1 = Timer.now();
         for (int i = 0; i < size; i++) {
-            nst.get(i);
+            bst2.get(i);
         }
         long t3 = Timer.now();
         for (int i = 0; i < size; i++) {
-            cst.get(i);
+            bst.get(i);
         }
         long t4 = Timer.now();
-        System.out.printf("CharSuccinctTrie2: %dms\n", Timer.ms(t, t0));
-        System.out.printf("ByteSuccinctTrie: %dms\n", Timer.ms(t0, t1));
-        System.out.printf("NestedSuccinctTrie: %dms\n", Timer.ms(t1, t3));
-        System.out.printf("CharSuccinctTrie: %dms\n", Timer.ms(t3, t4));
+        System.out.printf(cst2.getClass().getSimpleName() + ": %dms\n", Timer.ms(t, t0));
+        System.out.printf(cst.getClass().getSimpleName() + ": %dms\n", Timer.ms(t0, t1));
+        System.out.printf(bst2.getClass().getSimpleName() + ": %dms\n", Timer.ms(t1, t3));
+        System.out.printf(bst.getClass().getSimpleName() + ": %dms\n", Timer.ms(t3, t4));
     }
 
     public static void iteratorTest(int flag) throws IOException {
-        String[] randoms = StringGenerateUtil.randomArray(1000000, 32, 0.0f);
+        String[] randoms = StringGenerateUtil.randomArray(1000000, 0, 8, 0.5f);
         System.out.printf("Data: %s\n", sizeOf(randoms));
         Arrays.parallelSort(randoms);
         if ((flag & 1) > 0) {
-            Set<String> set = Arrays.stream(randoms).parallel().collect(Collectors.toSet());
+            SuccinctTrie srt = new CompactRadixTree(randoms);
             long now = Timer.now();
-            set.forEach(s -> {
+            srt.iterator(true).forEachRemaining(s -> {
             });
             long ms = Timer.ms(now);
-            System.out.printf("%s: %dms | %s\n", set.getClass().getSimpleName(), ms, sizeOf(set));
+            System.out.printf("%s: %dms | %s\n", srt.getClass().getSimpleName(), ms, sizeOf(srt));
         }
         if ((flag & 2) > 0) {
             SimpleFSA fsa = new SimpleFSA(randoms);
@@ -131,10 +138,18 @@ public class SuccinctTrieTest {
             long ms = Timer.ms(now);
             System.out.printf("%s: %dms | %s\n", bst.getClass().getSimpleName(), ms, sizeOf(bst));
         }
+        if ((flag & 32) > 0) {
+            SuccinctTrie bst = ByteSuccinctTrie2.of(randoms);
+            long now = Timer.now();
+            bst.iterator(true).forEachRemaining(s -> {
+            });
+            long ms = Timer.ms(now);
+            System.out.printf("%s: %dms | %s\n", bst.getClass().getSimpleName(), ms, sizeOf(bst));
+        }
     }
 
     public static void memoryTest() {
-        String[] randoms = StringGenerateUtil.randomArray(1000000, 2, 14, 0.0f);
+        String[] randoms = StringGenerateUtil.randomArray(1000000, 0, 8, 0.5f);
         Arrays.parallelSort(randoms);
         long t0 = Timer.now();
         SimpleFSA fsa = new SimpleFSA(randoms);
@@ -145,10 +160,13 @@ public class SuccinctTrieTest {
         long t3 = Timer.now();
         SuccinctTrie cst = CharSuccinctTrie.sortedOf(randoms);
         long t4 = Timer.now();
+        SuccinctTrie srt = new CompactRadixTree(randoms);
+        long t5 = Timer.now();
         System.out.printf("Data: %s\n", sizeOf(randoms));
         System.out.printf("%s: %dms | %s\n", fsa.getClass().getSimpleName(), Timer.ms(t0, t1), sizeOf(fsa));
         System.out.printf("%s: %dms | %s\n", bst.getClass().getSimpleName(), Timer.ms(t1, t2), sizeOf(bst));
         System.out.printf("%s: %dms | %s\n", cst2.getClass().getSimpleName(), Timer.ms(t2, t3), sizeOf(cst2));
         System.out.printf("%s: %dms | %s\n", cst.getClass().getSimpleName(), Timer.ms(t3, t4), sizeOf(cst));
+        System.out.printf("%s: %dms | %s\n", srt.getClass().getSimpleName(), Timer.ms(t4, t5), sizeOf(srt));
     }
 }
